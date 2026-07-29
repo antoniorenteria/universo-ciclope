@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<title>Universo Cíclope · El Anillo del Cíclope®</title>
+<meta name="description" content="El universo digital de El Anillo del Cíclope. Cumple misiones de la Expedición, juega y descubre el lore de Mirano.">
+<meta name="theme-color" content="#151019">
+<meta name="robots" content="noindex">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Universo Cíclope">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="assets/img/isotipo.png">
+<link rel="apple-touch-icon" href="assets/img/isotipo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/universo.css">
+</head>
+<body class="bloqueado">
+
+<a class="skip" href="#app">Saltar al contenido</a>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="nebula" aria-hidden="true"></div>
+
+<!-- ==================== GATE ==================== -->
+<div class="gate" id="gate" role="button" tabindex="0" aria-label="Toca el ojo para entrar al Universo Cíclope">
+  <div class="gate__core">
+    <span class="gate__halo" aria-hidden="true"></span>
+    <img class="gate__eye" src="assets/img/isotipo.png" alt="" width="128" draggable="false">
+    <p class="gate__kicker">Universo</p>
+    <p class="gate__title">Cíclope</p>
+    <p class="gate__hint">TOCA EL OJO</p>
+  </div>
+</div>
+
+<!-- ==================== APP ==================== -->
+<main class="app" id="app">
+
+  <!-- header -->
+  <header class="top">
+    <div class="top__brand">
+      <img src="assets/img/isotipo.png" alt="El Anillo del Cíclope">
+      <b>Universo Cíclope</b>
+    </div>
+    <div class="top__pts" title="Tus puntos">✦ <span id="hdr-pts">0</span></div>
+  </header>
+
+  <section class="vista activa" id="v-inicio" aria-label="Inicio"></section>
+  <section class="vista" id="v-expedicion" aria-label="Expedición Cíclope"></section>
+  <section class="vista" id="v-juegos" aria-label="Juegos"></section>
+  <section class="vista" id="v-archivo" aria-label="Archivo Cíclope"></section>
+  <section class="vista" id="v-perfil" aria-label="Perfil"></section>
+</main>
+
+<!-- ==================== NAV INFERIOR ==================== -->
+<nav class="tabs" aria-label="Navegación principal">
+  <button class="tab activo" data-ruta="inicio"><span class="tab__ico">🏠</span><span class="tab__txt">Inicio</span></button>
+  <button class="tab" data-ruta="expedicion"><span class="tab__ico">🧭</span><span class="tab__txt">Expedición</span></button>
+  <button class="tab" data-ruta="juegos"><span class="tab__ico">🎮</span><span class="tab__txt">Juegos</span></button>
+  <button class="tab" data-ruta="archivo"><span class="tab__ico">📖</span><span class="tab__txt">Archivo</span></button>
+  <button class="tab" data-ruta="perfil"><span class="tab__ico">👤</span><span class="tab__txt">Perfil</span></button>
+</nav>
+
+<!-- ==================== VISOR DE JUEGOS ==================== -->
+<div class="player" id="player" role="dialog" aria-label="Juego">
+  <div class="player__bar">
+    <b id="player-title">Juego</b>
+    <button class="player__x" id="player-x" aria-label="Cerrar juego">✕</button>
+  </div>
+  <iframe id="player-frame" src="about:blank" title="Juego" allow="autoplay; fullscreen"></iframe>
+</div>
+
+<!-- ==================== MODAL ==================== -->
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="modal__bg" id="modal-bg"></div>
+  <div class="modal__card" id="modal-card"></div>
+</div>
+
+<!-- toast -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/js/reglas.js"></script>
+<script src="assets/js/contenido.js"></script>
+<script src="assets/js/estado.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

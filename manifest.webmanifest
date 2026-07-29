@@ -1,0 +1,23 @@
+{
+  "name": "Universo Cíclope",
+  "short_name": "U. Cíclope",
+  "description": "El universo digital de El Anillo del Cíclope. Misiones, juegos y el lore de Mirano.",
+  "id": "/universo-ciclope/",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#151019",
+  "theme_color": "#151019",
+  "categories": ["games", "entertainment", "lifestyle"],
+  "lang": "es",
+  "icons": [
+    { "src": "assets/img/isotipo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/isotipo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/isotipo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Expedición", "url": "./#expedicion" },
+    { "name": "Juegos", "url": "./#juegos" }
+  ]
+}
