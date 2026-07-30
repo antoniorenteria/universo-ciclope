@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR imprimible · Universo Cíclope</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="../assets/img/app-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=VT323&display=swap" rel="stylesheet">
+<style>
+@font-face { font-family:'Serif Gothic'; src:url('../assets/fonts/itc-serif-gothic-extra-bold-588cef7e1f5d9.otf') format('opentype'); font-weight:700; }
+@font-face { font-family:'Serif Gothic'; src:url('../assets/fonts/itc-serif-gothic-heavy-588d443a778f2.otf') format('opentype'); font-weight:800; }
+@font-face { font-family:'Serif Gothic'; src:url('../assets/fonts/itc-serif-gothic-black-588d43e1e915d.otf') format('opentype'); font-weight:900; }
+:root{
+  --amarillo:#FFD600; --morado:#5b2a9d; --morado-luz:#a77be0; --ambar:#e0a83c;
+  --fondo:#151019; --fondo2:#1c1526; --marfil:#f2eee8;
+  --display:'Serif Gothic','Poppins',serif; --body:'Poppins',system-ui,sans-serif; --mono:'VT323',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0a14;color:var(--marfil);font-family:var(--body);min-height:100vh}
+
+/* ===== barra de control (no se imprime) ===== */
+.bar{position:sticky;top:0;z-index:10;background:#1a1424;border-bottom:1px solid rgba(255,214,0,.15);padding:14px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.bar b{font-family:var(--display);font-weight:800;color:var(--marfil);font-size:16px;margin-right:auto}
+.bar label{font-size:13px;color:#b7aec4;display:flex;align-items:center;gap:6px}
+select,.btn{font:inherit;border-radius:9px;border:1px solid rgba(255,214,0,.2);background:#241a34;color:var(--marfil);padding:9px 14px;cursor:pointer}
+.btn{background:var(--amarillo);color:#1a1408;border:0;font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.04em}
+.hint{padding:14px 20px;color:#8f86a0;font-size:13px;text-align:center}
+.stage{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:24px}
+
+/* ===== PÓSTER (A4 vertical) ===== */
+.poster{
+  width:210mm;height:297mm;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse 90% 55% at 50% 8%, #33224d, #120d1c 70%);
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:24mm 18mm;color:var(--marfil);
+}
+.poster::before{content:'';position:absolute;inset:0;
+  background-image:radial-gradient(rgba(255,214,0,.09) 1.3px, transparent 1.5px);background-size:16px 16px;
+  mask-image:linear-gradient(transparent,#000 30%);opacity:.6}
+.poster > *{position:relative;z-index:1}
+.p-eye{width:34mm;filter:drop-shadow(0 0 8mm rgba(255,214,0,.45))}
+.p-kicker{font-family:var(--display);font-weight:700;color:var(--ambar);font-size:8mm;letter-spacing:.14em;text-transform:uppercase;margin-top:6mm;line-height:1}
+.p-title{font-family:var(--display);font-weight:900;color:var(--marfil);font-size:20mm;line-height:.92;letter-spacing:.01em;margin-top:1mm}
+.p-sub{font-size:5.4mm;color:#e7e1ee;max-width:150mm;margin:7mm auto 0;line-height:1.35;font-weight:300}
+.qrbox{background:#fff;border-radius:8mm;padding:7mm;margin:10mm auto 0;box-shadow:0 8mm 24mm rgba(0,0,0,.45)}
+.qrbox img{display:block;width:82mm;height:82mm}
+.p-scan{font-family:var(--display);font-weight:800;color:var(--amarillo);font-size:9mm;margin-top:9mm;letter-spacing:.02em}
+.p-steps{display:flex;gap:9mm;justify-content:center;margin-top:8mm;flex-wrap:wrap}
+.p-step{display:flex;align-items:center;gap:2.5mm;font-size:4.4mm;color:#d9d2e4}
+.p-step .n{width:8mm;height:8mm;border-radius:50%;background:var(--amarillo);color:#1a1408;font-family:var(--display);font-weight:800;display:grid;place-items:center;font-size:4.6mm}
+.p-foot{margin-top:auto;padding-top:8mm}
+.p-url{font-family:var(--mono);font-size:6mm;color:var(--amarillo);letter-spacing:.05em}
+.p-brand{font-family:var(--display);font-weight:700;color:#b9b0c8;font-size:4.6mm;letter-spacing:.14em;text-transform:uppercase;margin-top:2mm}
+.p-branch{font-size:4.6mm;color:#cfc7db;margin-top:1mm}
+
+/* ===== TARJETA DE MESA (A6, doble cara para doblar) ===== */
+.tent{width:105mm;height:297mm;display:none;flex-direction:column}
+.tent .half{flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 20%, #33224d, #120d1c 75%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:14mm 10mm;border-bottom:1px dashed rgba(255,255,255,.25)}
+.tent .t-eye{width:22mm;filter:drop-shadow(0 0 5mm rgba(255,214,0,.4))}
+.tent .t-title{font-family:var(--display);font-weight:900;font-size:12mm;line-height:.95;margin-top:3mm}
+.tent .t-kicker{font-family:var(--display);font-weight:700;color:var(--ambar);font-size:5mm;letter-spacing:.14em;text-transform:uppercase;margin-top:2mm}
+.tent .qrbox{margin-top:6mm}
+.tent .qrbox img{width:48mm;height:48mm}
+.tent .t-scan{font-family:var(--display);font-weight:800;color:var(--amarillo);font-size:6mm;margin-top:5mm}
+.tent .t-url{font-family:var(--mono);color:var(--amarillo);font-size:4.4mm;margin-top:2mm}
+.mode-tent .poster{display:none}
+.mode-tent .tent{display:flex}
+
+@media print{
+  @page{ size:A4; margin:0 }
+  html,body{background:#fff}
+  .bar,.hint{display:none!important}
+  .stage{padding:0;gap:0;display:block}
+  .poster,.tent{box-shadow:none;page-break-after:always}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>🖨️ QR imprimible</b>
+  <label>Formato
+    <select id="fmt">
+      <option value="poster">Póster (A4 · pared/ventana)</option>
+      <option value="tent">Tarjeta de mesa (doblar)</option>
+    </select>
+  </label>
+  <label>Sucursal
+    <select id="branch">
+      <option value="">General (ambas)</option>
+      <option value="revolucion">Revolución</option>
+      <option value="tulipanes">Tulipanes</option>
+    </select>
+  </label>
+  <button class="btn" id="print">Imprimir</button>
+  <button class="btn" id="dl" style="background:#241a34;color:var(--marfil);border:1px solid rgba(255,214,0,.2)">Descargar QR (PNG)</button>
+</div>
+<p class="hint">Elige formato y sucursal, luego <b>Imprimir</b> (o guárdalo como PDF y mándalo a la imprenta). Imprime en color con "gráficos de fondo" activado.</p>
+
+<div class="stage" id="stage">
+
+  <!-- PÓSTER -->
+  <div class="poster">
+    <img class="p-eye" src="../assets/img/isotipo.png" alt="">
+    <div class="p-kicker">Universo</div>
+    <div class="p-title">Cíclope</div>
+    <div class="p-sub">Tu expedición no termina en la mesa. Juega, cumple misiones y gana premios — sin descargar nada, sin registrarte.</div>
+    <div class="qrbox"><img id="qr-poster" alt="Código QR"></div>
+    <div class="p-scan">ESCANEA Y ENTRA</div>
+    <div class="p-steps">
+      <div class="p-step"><span class="n">1</span> Abre la cámara</div>
+      <div class="p-step"><span class="n">2</span> Apunta al código</div>
+      <div class="p-step"><span class="n">3</span> Toca el ojo 👁️</div>
+    </div>
+    <div class="p-foot">
+      <div class="p-url" id="url-poster">universo.elanillodelciclope.com</div>
+      <div class="p-brand">El Anillo del Cíclope®</div>
+      <div class="p-branch" id="branch-poster"></div>
+    </div>
+  </div>
+
+  <!-- TARJETA DE MESA (2 caras iguales para doblar) -->
+  <div class="tent">
+    <div class="half">
+      <img class="t-eye" src="../assets/img/isotipo.png" alt="">
+      <div class="t-kicker">Universo</div>
+      <div class="t-title">Cíclope</div>
+      <div class="qrbox"><img class="qr-tent" alt="Código QR"></div>
+      <div class="t-scan">ESCANEA Y JUEGA</div>
+      <div class="t-url" id="url-tent1">universo.elanillodelciclope.com</div>
+    </div>
+    <div class="half">
+      <img class="t-eye" src="../assets/img/isotipo.png" alt="">
+      <div class="t-kicker">Universo</div>
+      <div class="t-title">Cíclope</div>
+      <div class="qrbox"><img class="qr-tent" alt="Código QR"></div>
+      <div class="t-scan">ESCANEA Y JUEGA</div>
+      <div class="t-url">universo.elanillodelciclope.com</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const APP = 'https://antoniorenteria.github.io/universo-ciclope/';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+function destino(){
+  const b = $('#branch').value;
+  return b ? APP + '?src=' + b : APP;
+}
+function qrUrl(px){
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=' + px + 'x' + px + '&margin=0&ecc=M&data=' + encodeURIComponent(destino());
+}
+function pintar(){
+  const big = qrUrl(1000);
+  $('#qr-poster').src = big;
+  $$('.qr-tent').forEach(i => i.src = big);
+  const b = $('#branch').value;
+  const etiqueta = b ? ('Sucursal ' + (b==='revolucion'?'Revolución':'Tulipanes')) : '';
+  $('#branch-poster').textContent = etiqueta;
+  document.body.classList.toggle('mode-tent', $('#fmt').value==='tent');
+}
+$('#branch').addEventListener('change', pintar);
+$('#fmt').addEventListener('change', pintar);
+$('#print').addEventListener('click', () => window.print());
+$('#dl').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = qrUrl(1200); a.download = 'qr-universo-ciclope' + ($('#branch').value?('-'+$('#branch').value):'') + '.png';
+  a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
+});
+pintar();
+</script>
+</body>
+</html>
