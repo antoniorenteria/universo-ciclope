@@ -1,58 +1,66 @@
 /* ============================================================
-   LA BITÁCORA DE MIRANO · REGLAS DE LA EXPEDICIÓN
+   UNIVERSO CÍCLOPE · REGLAS DEL JUEGO
    ------------------------------------------------------------
-   ESTE ES EL ÚNICO ARCHIVO QUE SE TOCA PARA CAMBIAR EL PROGRAMA.
-   Todo lo demás funciona solo.
+   ESTE ES EL ÚNICO ARCHIVO (junto con contenido.js) QUE SE TOCA
+   PARA CAMBIAR EL PROGRAMA. Todo lo demás funciona solo.
 
-   Las encomiendas son CONDUCTAS, no promociones: no caducan,
-   no hay que actualizarlas cada mes.
+   MODELO CLARO (así el explorador entiende qué hace y por qué):
+   · VISITAS  -> se registran con el folio del ticket. Dan SELLOS.
+   · SELLOS   -> suben tu RANGO de explorador y REPARAN la nave.
+   · GEMAS    -> se ganan jugando y visitando. Compran RECOMPENSAS.
+   · RANGO    -> solo se sube visitando. Desbloquea premios y lore.
    ============================================================ */
 
 const REGLAS = {
 
-  /* ---------- ECONOMÍA ----------------------------------------
-     SELLOS  = visitas reales (folio de ticket). Suben de RANGO.
-     PUNTOS  = se ganan jugando y visitando. Compran RECOMPENSAS.
-     El premio mayor exige RANGO, no solo puntos: así los juegos
-     nunca sustituyen a las visitas.
-  ------------------------------------------------------------ */
+  /* ---------- ECONOMÍA ---------------------------------------- */
   economia: {
-    puntosPorVisita:      10,   // puntos que da sellar una visita
-    puntosPorCadaCienPesos: 5,  // puntos extra por consumo
-    topePuntosJuegoDia:   12,   // máximo de puntos/día desde los juegos
+    gemasPorVisita:       10,   // gemas que da registrar una visita
+    gemasPorCadaCienPesos: 5,   // gemas extra por consumo
+    topeGemasJuegoDia:    12,   // máximo de gemas/día desde los juegos
     consumoMinimo:        120,  // $ mínimos del ticket para sellar
   },
 
-  /* ---------- RANGOS ------------------------------------------
-     El rango se gana SOLO con sellos (visitas). No se compra.
+  /* ---------- RANGOS DE EXPLORADOR (5 niveles) ----------------
+     Del 1 (explorador convencional) al 5 (embajador de marca).
+     Se suben SOLO con sellos (visitas). Esta métrica se guarda
+     limpia para que el panel del Ojo Maestro / Mentor la lea
+     después (id, nivel, sellos). No cambies los ids: el backend
+     se vinculará por ellos.
   ------------------------------------------------------------ */
   rangos: [
-    { id:'aprendiz',  nombre:'Aprendiz',            sellos:0,  ico:'🔦',
-      lema:'Acabas de aterrizar. La expedición apenas comienza.' },
-    { id:'explorador',nombre:'Explorador',          sellos:3,  ico:'🗺️',
-      lema:'Ya conoces el terreno. Mirano empieza a reconocerte.' },
-    { id:'cazador',   nombre:'Cazador',             sellos:8,  ico:'🏹',
-      lema:'Pocos llegan aquí. La nave avanza gracias a ti.' },
-    { id:'guardian',  nombre:'Guardián del Anillo', sellos:15, ico:'💍',
+    { id:'explorador', nivel:1, nombre:'Explorador',            sellos:0,  ico:'🔭',
+      lema:'Acabas de aterrizar en el Universo Cíclope.' },
+    { id:'rastreador', nivel:2, nombre:'Rastreador',            sellos:3,  ico:'🧭',
+      lema:'Sigues el rastro de Mirano por el cosmos.' },
+    { id:'cazador',    nivel:3, nombre:'Cazador de Reliquias',  sellos:8,  ico:'🏹',
+      lema:'Buscas lo que nadie más se atreve a ver.' },
+    { id:'guardian',   nivel:4, nombre:'Guardián del Anillo',   sellos:15, ico:'💍',
       lema:'Custodias el secreto de la Gema. Mirano confía en ti.' },
-    { id:'mayor',     nombre:'Cíclope Mayor',       sellos:25, ico:'👁️',
-      lema:'Leyenda viva. Tu nombre queda grabado en el Muro.' },
+    { id:'embajador',  nivel:5, nombre:'Embajador del Universo',sellos:25, ico:'👁️',
+      lema:'Eres la voz del Anillo. Tu nombre queda en la leyenda.' },
   ],
 
-  /* ---------- ENCOMIENDAS (misiones permanentes) --------------
-     activa:false  ->  la apaga sin borrar nada.
-     auto:true     ->  la valida el sistema con el folio (Loyverse).
-     Para el piloto arrancan 4. Las otras se encienden cambiando
-     activa:false por activa:true. Nada más.
+  /* ---------- LA NAVE DE MIRANO -------------------------------
+     La nave de Mirano se averió al caer en la Tierra. Cada
+     visita repara una pieza. Empieza en 0 y llega a 100% con
+     'sellosParaDespegue' visitas. Es una barra CLARA de progreso.
+  ------------------------------------------------------------ */
+  nave: { sellosParaDespegue: 30 },
+
+  /* ---------- MISIONES (permanentes) --------------------------
+     Antes "encomiendas". La clave interna se queda igual para no
+     romper datos guardados, pero en pantalla se llaman MISIONES.
+     activa:false la apaga.  auto:true la valida el sistema.
   ------------------------------------------------------------ */
   encomiendas: [
-    { id:'primer-contacto', activa:true,  auto:true,  ico:'🔦',
+    { id:'primer-contacto', activa:true,  auto:true,  ico:'🛸',
       nombre:'Primer Contacto',
-      desc:'Sella tu primera visita y abre tu bitácora.',
+      desc:'Registra tu primera visita y abre tu bitácora.',
       meta:1, premio:15,
       mirano:'Un terrícola más en mi tripulación. Bienvenido.' },
 
-    { id:'ojo-testigo', activa:true, auto:false, ico:'👁️',
+    { id:'ojo-testigo', activa:true, auto:false, ico:'⭐',
       nombre:'El Ojo Testigo',
       desc:'Deja tu reseña en Google. El ojo que todo lo ve, ahora te ve a ti.',
       meta:1, premio:30, unaVez:true,
@@ -80,64 +88,40 @@ const REGLAS = {
 
     { id:'peregrino', activa:false, auto:true, ico:'🗺️',
       nombre:'Peregrino',
-      desc:'Sella una visita en Revolución y otra en Tulipanes.',
+      desc:'Registra una visita en Revolución y otra en Tulipanes.',
       meta:2, premio:35,
       mirano:'Dos bases, un mismo cielo. Recórrelas.' },
-
-    { id:'convocatoria', activa:false, auto:false, ico:'📣',
-      nombre:'Convocatoria',
-      desc:'Trae 3 cíclopes nuevos con tu código de expedición.',
-      meta:3, premio:60,
-      mirano:'Ningún explorador llega lejos solo. Convoca a los tuyos.' },
-
-    { id:'retador', activa:false, auto:false, ico:'🎮',
-      nombre:'Retador de Mirano',
-      desc:'Supera 8,000 puntos en La Gema Mágica.',
-      meta:1, premio:25,
-      enlace:'https://la-gema-magica.vercel.app/',
-      mirano:'¿Crees que puedes con mis reflejos? Demuéstralo.' },
   ],
 
-  /* ---------- RECOMPENSAS -------------------------------------
-     Costos reales verificados en Loyverse (30 días, jul 2026).
-     La escalera está calibrada para que ahorrar SÍ convenga:
-     el valor por punto sube conforme sube el premio.
-     rango:'cazador' -> exige rango, no solo puntos.
-  ------------------------------------------------------------ */
+  /* ---------- RECOMPENSAS (se pagan con GEMAS) ---------------- */
   recompensas: [
-    { id:'dip',    puntos:10, ico:'🥣', nombre:'Dip Extra 50g',
+    { id:'dip',    gemas:10, ico:'🥣', nombre:'Dip Extra 50g',
       desc:'La salsa que elijas para tus Cerebros.', costo:5.00 },
 
-    { id:'pocion', puntos:40, ico:'🧪', nombre:'Poción Clásica 16oz',
+    { id:'pocion', gemas:40, ico:'🧪', nombre:'Poción Clásica 16oz',
       desc:'Baba de Ogro, Materia Gris, Sangre de Hada o Lodo del Pantano.',
       costo:null, pendiente:true },
 
-    { id:'papas',  puntos:45, ico:'🍟', nombre:'Papas Muertas',
+    { id:'papas',  gemas:45, ico:'🍟', nombre:'Papas Muertas',
       desc:'250g a la francesa con catsup y queso.', costo:27.23 },
 
-    { id:'crepi',  puntos:65, ico:'🧟', nombre:'Crepiburger Zombie',
+    { id:'crepi',  gemas:65, ico:'🧟', nombre:'Crepiburger Zombie',
       desc:'La creación de la casa, envuelta en piel de zombie.',
       costo:45.06, rango:'cazador' },
   ],
 
-  /* ---------- SUCURSALES -------------------------------------- */
+  /* ---------- SUCURSALES / BASES ------------------------------ */
   sucursales: [
     { id:'revolucion', nombre:'Revolución', zona:'Pachuca de Soto' },
     { id:'tulipanes',  nombre:'Tulipanes',  zona:'Mineral de la Reforma' },
   ],
 
-  /* ---------- NAVE --------------------------------------------
-     Los sellos reparan la nave de Mirano: es la misma barra
-     que ya vive en el sitio. 60 sellos = despegue.
-  ------------------------------------------------------------ */
-  nave: { base:38, sellosParaDespegue:60 },
-
   /* ---------- VOZ DE MIRANO ----------------------------------- */
   voz: {
     selloOk: [
-      'Otro tornillo para la nave. Gracias, terrícola.',
-      'Registrado en la bitácora. La Gema está más cerca.',
-      'Mi ojo lo vio todo. Sello acreditado.',
+      'Otra pieza para la nave. Gracias, terrícola.',
+      'Registrado en tu bitácora. La Gema está más cerca.',
+      'Mi ojo lo vio todo. Visita acreditada.',
       'Un paso más lejos de este planeta azul.',
     ],
     rangoNuevo: '¡Subiste de rango! El universo lo notó.',
@@ -145,7 +129,7 @@ const REGLAS = {
   },
 };
 
-/* Utilidades derivadas de las reglas (no editar) */
+/* ---------- Utilidades derivadas (no editar) ---------------- */
 REGLAS.rangoPorSellos = function (sellos) {
   let r = this.rangos[0];
   for (const x of this.rangos) if (sellos >= x.sellos) r = x;

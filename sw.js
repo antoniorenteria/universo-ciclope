@@ -3,7 +3,7 @@
    Cache "app shell" para carga inmediata y uso con conexión
    limitada. Sube el número de versión al publicar cambios.
    ============================================================ */
-const VERSION = 'uc-v1';
+const VERSION = 'uc-v2';
 const SHELL = [
   './',
   './index.html',
@@ -14,7 +14,7 @@ const SHELL = [
   './assets/js/estado.js',
   './assets/js/app.js',
   './assets/img/isotipo.png',
-  './assets/img/mirano-full.png',
+  './assets/img/app-icon.png',
 ];
 
 self.addEventListener('install', e => {

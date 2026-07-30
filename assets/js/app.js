@@ -1,6 +1,6 @@
 /* ============================================================
-   UNIVERSO CÍCLOPE · MOTOR DE LA APP
-   Router SPA + render de secciones. Sin frameworks, sin build.
+   UNIVERSO CÍCLOPE · MOTOR DE LA APP (v2)
+   Router SPA + render. Sin frameworks, sin build.
    Depende de: reglas.js, contenido.js, estado.js
    ============================================================ */
 (function () {
@@ -36,18 +36,44 @@
     medir(); dibuja(); addEventListener('resize', medir);
   })();
 
+  /* ---------------- MÚSICA ---------------- */
+  const bgm = $('#bgm');
+  const MUTE_KEY = 'uc_mute';
+  let muted = localStorage.getItem(MUTE_KEY) === '1';
+  function pintarMute() {
+    const ic = muted ? '🔇' : '🎵';
+    const g = $('#gate-mute'), t = $('#music-toggle');
+    if (g) g.textContent = ic;
+    if (t) t.textContent = ic;
+  }
+  function arrancarMusica() {
+    if (!bgm || muted) return;
+    bgm.volume = 0.35;
+    bgm.play().catch(()=>{});
+  }
+  function toggleMute() {
+    muted = !muted;
+    localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+    if (bgm) { bgm.muted = muted; if (!muted) bgm.play().catch(()=>{}); }
+    pintarMute();
+  }
+  pintarMute();
+
   /* ---------------- GATE ---------------- */
   const gate = $('#gate');
   function abrirGate() {
+    arrancarMusica();
     gate.classList.add('oculto');
     document.body.classList.remove('bloqueado');
     setTimeout(() => { gate.style.display='none'; }, 650);
   }
   if (gate) {
     document.body.classList.add('bloqueado');
-    gate.addEventListener('click', abrirGate);
+    gate.addEventListener('click', e => { if (e.target.closest('#gate-mute')) return; abrirGate(); });
     gate.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); abrirGate(); } });
   }
+  $('#gate-mute') && $('#gate-mute').addEventListener('click', e => { e.stopPropagation(); toggleMute(); });
+  $('#music-toggle') && $('#music-toggle').addEventListener('click', toggleMute);
 
   /* ---------------- TOAST ---------------- */
   let toastT;
@@ -60,6 +86,7 @@
   const rutas = ['inicio','expedicion','juegos','archivo','perfil'];
   function ir(ruta) {
     if (!rutas.includes(ruta)) ruta = 'inicio';
+    document.body.dataset.sec = ruta;              // contraste de fondo por sección
     $$('.vista').forEach(v => v.classList.toggle('activa', v.id === 'v-'+ruta));
     $$('.tab').forEach(t => t.classList.toggle('activo', t.dataset.ruta === ruta));
     render(ruta);
@@ -69,10 +96,10 @@
   }
   $$('.tab').forEach(t => t.addEventListener('click', () => ir(t.dataset.ruta)));
 
-  /* ---------------- RENDER por sección ---------------- */
+  /* ---------------- RENDER ---------------- */
   function render(ruta) {
     P = Explorador.actual();
-    $('#hdr-pts').textContent = P.puntos;
+    $('#hdr-pts').textContent = P.gemas;
     if (ruta === 'inicio')     renderInicio();
     if (ruta === 'expedicion') renderExpedicion();
     if (ruta === 'juegos')     renderJuegos();
@@ -80,18 +107,27 @@
     if (ruta === 'perfil')     renderPerfil();
   }
 
+  /* helper: cabecera de sección con título en ITC */
+  function secHead(kicker, titulo, sub) {
+    return `<div class="sec-head">
+      <div class="sec-head__kicker">${esc(kicker)}</div>
+      <h1 class="sec-head__title">${esc(titulo)}</h1>
+      ${sub ? `<p class="sec-head__sub">${esc(sub)}</p>` : ''}
+    </div>`;
+  }
+
   /* ===== INICIO ===== */
   function renderInicio() {
     const C = CONTENIDO;
-    const rango = Estado.rango(P), sig = Estado.siguiente(P), pct = Estado.nave(P);
+    const rango = Estado.rango(P);
     let html = '';
 
-    // HERO
+    // HERO (imagen de fondo + scrim)
     if (C.hero && C.hero.activo) {
       const h = C.hero;
       html += `<div class="hero">
-        <div class="hero__glow"></div>
-        ${h.img ? `<img class="hero__img" src="${esc(h.img)}" alt="" aria-hidden="true">` : ''}
+        ${h.bg ? `<img class="hero__bg" src="${esc(h.bg)}" alt="" aria-hidden="true">` : ''}
+        <div class="hero__scrim"></div>
         <div class="hero__body">
           ${h.etiqueta ? `<span class="hero__tag">${esc(h.etiqueta)}</span>` : ''}
           <h1 class="hero__title">${esc(h.titulo)}</h1>
@@ -101,64 +137,69 @@
       </div>`;
     }
 
-    // NOVEDADES
-    if (C.novedades && C.novedades.length) {
-      html += `<div class="h-sec pad"><h2>Novedades</h2><span>Lo nuevo</span></div>`;
-      html += `<div class="rail">` + C.novedades.map(n => `
-        <div class="card nov" data-accion='${JSON.stringify(n.accion)}'>
-          <div class="nov__ico">${esc(n.ico)}</div>
-          <div class="nov__tag">${esc(n.tag||'')}</div>
-          <div class="nov__title">${esc(n.titulo)}</div>
-          <div class="nov__text">${esc(n.texto)}</div>
-        </div>`).join('') + `</div>`;
-    }
+    // HOOK — para el que solo está viendo: acciones claras y llamativas
+    html += `<div class="h-sec pad"><h2>¿Qué quieres hacer?</h2></div>`;
+    html += `<div class="pad hook">
+      <div class="hook__card hook__card--play" data-ir="juegos">
+        <span class="hook__go">›</span>
+        <div class="hook__ico">🎮</div>
+        <div class="hook__t">Jugar ya</div>
+        <div class="hook__d">Sin registro. Gana gemas jugando.</div>
+      </div>
+      <div class="hook__card hook__card--exp" data-ir="expedicion">
+        <span class="hook__go">›</span>
+        <div class="hook__ico">🧭</div>
+        <div class="hook__t">Unirme a la expedición</div>
+        <div class="hook__d">Registra visitas, sube de rango, canjea premios.</div>
+      </div>
+      <div class="hook__card hook__card--wide" data-ir="archivo">
+        <div class="hook__ico">📖</div>
+        <div style="flex:1"><div class="hook__t" style="font-size:16px">Descubre la historia de Mirano</div>
+          <div class="hook__d">Planetas, criaturas y secretos por desbloquear.</div></div>
+        <span class="hook__go" style="position:static">›</span>
+      </div>
+    </div>`;
 
-    // CONTINUAR EXPLORANDO (si ya tocó algún juego)
+    // CONTINUAR (si ya jugó algo)
     const jugado = Object.keys(P.juegos || {});
     if (jugado.length) {
       const jid = jugado[jugado.length-1];
       const j = C.juegos.find(x => x.id === jid);
       if (j) html += `
       <div class="h-sec pad"><h2>Continuar</h2><span>Donde quedaste</span></div>
-      <div class="pad"><div class="card tile tile--wide tile--hot" data-juego="${esc(j.id)}">
-        <span class="tile__ico">${esc(j.ico)}</span>
-        <div style="flex:1"><div class="tile__t">${esc(j.nombre)}</div>
-          <div class="tile__d">Mejor: ${(P.juegos[jid]&&P.juegos[jid].mejor)||0} · ${(P.juegos[jid]&&P.juegos[jid].partidas)||0} partidas</div></div>
+      <div class="pad"><div class="card hook__card--wide" data-juego="${esc(j.id)}" style="cursor:pointer;clip-path:var(--notch);padding:16px;display:flex;align-items:center;gap:14px">
+        <span style="font-size:30px">${esc(j.ico)}</span>
+        <div style="flex:1"><div class="hook__t" style="font-size:16px">${esc(j.nombre)}</div>
+          <div class="hook__d">Mejor: ${(P.juegos[jid]&&P.juegos[jid].mejor)||0} · ${(P.juegos[jid]&&P.juegos[jid].partidas)||0} partidas</div></div>
         <span class="btn btn--sm btn--ghost">Seguir</span>
       </div></div>`;
     }
 
-    // NAVE (progreso del explorador)
-    html += `<div class="pad"><div class="card card--purple nave" data-ir="perfil">
-      <div class="nave__top">
-        <div class="nave__rango"><span class="nave__ico">${esc(rango.ico)}</span>
-          <b>${esc(rango.nombre)}</b></div>
-        <span class="nave__pct">${pct}%</span>
-      </div>
-      <div class="bar"><div class="bar__fill" style="width:${pct}%"></div></div>
-      <p class="nave__hint">${sig
-        ? `Repara la nave de Mirano. ${sig.sellos - P.sellos} sello(s) para ${esc(sig.nombre)}.`
-        : 'La nave está lista para despegar. Eres leyenda.'}</p>
-    </div></div>`;
+    // NOVEDADES — carrusel de imágenes
+    if (C.novedades && C.novedades.length) {
+      html += `<div class="h-sec pad"><h2>Novedades</h2><span>Desliza →</span></div>`;
+      html += `<div class="rail">` + C.novedades.map(n => `
+        <div class="novimg" data-accion='${JSON.stringify(n.accion)}'>
+          <img src="${esc(n.img)}" alt="${esc(n.titulo)}" loading="lazy">
+          <div class="novimg__scrim"></div>
+          <div class="novimg__body">
+            <div class="novimg__tag">${esc(n.tag||'')}</div>
+            <div class="novimg__title">${esc(n.titulo)}</div>
+          </div>
+        </div>`).join('') + `</div>`;
+    }
 
-    // ACCESOS grandes
-    html += `<div class="h-sec pad"><h2>Tu universo</h2></div>`;
-    html += `<div class="pad tiles">
-      <div class="card tile tile--wide tile--hot" data-ir="expedicion">
-        <span class="tile__ico">🧭</span>
-        <div style="flex:1"><div class="tile__t">Expedición Cíclope</div>
-          <div class="tile__d">Misiones de Mirano. El corazón del universo.</div></div>
-        <span class="btn btn--sm btn--solid">Ir</span>
-      </div>
-      <div class="card tile" data-ir="juegos"><span class="tile__ico">🎮</span>
-        <div><div class="tile__t">Juegos</div><div class="tile__d">Juega y suma puntos</div></div>
-        <span class="tile__go btn btn--sm btn--ghost">Jugar</span></div>
-      <div class="card tile" data-ir="archivo"><span class="tile__ico">📖</span>
-        <div><div class="tile__t">Archivo</div><div class="tile__d">El lore del universo</div></div>
-        <span class="tile__go btn btn--sm btn--ghost">Abrir</span></div>
-    </div>`;
+    // MI BITÁCORA — aclara dónde vive la bitácora
+    const pct = Estado.nave(P);
+    html += `<div class="h-sec pad"><h2>Mi bitácora</h2><span>Tu progreso</span></div>
+      <div class="pad"><div class="card listrow" data-ir="perfil" style="cursor:pointer">
+        <div class="listrow__l"><span class="listrow__ico">${esc(rango.ico)}</span>
+          <div><b>${esc(P.apodo || 'Explorador')} · ${esc(rango.nombre)}</b>
+            <small>${P.sellos} sellos · ${P.gemas} gemas · nave ${pct}%</small></div></div>
+        <span class="btn btn--sm btn--ghost">Abrir</span>
+      </div></div>`;
 
-    // PROMOS (descubrimientos)
+    // PROMOS
     const promos = (C.promos||[]).filter(p => p.activo);
     if (promos.length) {
       html += `<div class="h-sec pad"><h2>Descubrimientos</h2></div><div class="pad">`;
@@ -169,11 +210,9 @@
     }
 
     // COMPARTIR
-    html += `<div class="h-sec pad"><h2>Comparte</h2></div>
-      <div class="pad"><div class="card tile tile--wide" data-modal="resena">
-        <span class="tile__ico">⭐</span>
-        <div style="flex:1"><div class="tile__t">Cuenta tu expedición</div>
-          <div class="tile__d">${esc(C.compartir.pregunta)}</div></div>
+    html += `<div class="pad" style="margin-top:20px"><div class="card listrow" data-modal="resena" style="cursor:pointer">
+        <div class="listrow__l"><span class="listrow__ico">⭐</span>
+          <div><b>Cuenta tu expedición</b><small>${esc(C.compartir.pregunta)}</small></div></div>
         <span class="btn btn--sm btn--ghost">Calificar</span>
       </div></div>`;
 
@@ -184,22 +223,20 @@
   /* ===== EXPEDICIÓN ===== */
   function renderExpedicion() {
     const rango = Estado.rango(P), sig = Estado.siguiente(P), pct = Estado.nave(P);
-    let html = `<div class="pad">
-      <p class="eyebrow" style="margin-top:8px">Expedición Cíclope</p>
-      <div class="card card--purple nave" style="margin:10px 0 4px">
-        <div class="nave__top">
-          <div class="nave__rango"><span class="nave__ico">${esc(rango.ico)}</span><b>${esc(rango.nombre)}</b></div>
-          <span class="nave__pct">${pct}%</span></div>
-        <div class="bar"><div class="bar__fill" style="width:${pct}%"></div></div>
-        <p class="nave__hint">${esc(rango.lema)}</p>
-      </div>
-      <button class="btn btn--solid btn--full" data-modal="sellar" style="margin:14px 0 4px">🎟️ Sellar una visita</button>
-      <p style="font-size:12px;opacity:.7;text-align:center;margin-bottom:6px">Cada ticket cuenta una vez. Suma sellos y sube de rango.</p>
+    const activas = REGLAS.encomiendasActivas();
+    const cumplidas = activas.filter(e => (P.encomiendas[e.id]||{}).completada).length;
+
+    let html = secHead('El corazón del universo', 'Expedición', 'Registra tus visitas, cumple misiones y sube de rango de explorador.');
+
+    html += `<div class="pad">
+      <button class="btn btn--solid btn--full" data-modal="sellar" style="margin:8px 0 4px">📸 Registrar mi visita</button>
+      <p style="font-size:12px;opacity:.72;text-align:center;margin-bottom:6px">Con el folio de tu ticket. Cada ticket cuenta una vez.</p>
     </div>`;
 
-    html += `<div class="h-sec pad"><h2>Encomiendas</h2><span>Misiones</span></div><div class="pad">`;
-    REGLAS.encomiendasActivas().forEach(e => {
-      const st = P.encomiendas[e.id] || {avance:0, completada:false, cobrada:false};
+    // MISIONES (sin subtítulo redundante)
+    html += `<div class="h-sec pad"><h2>Misiones</h2><span>${cumplidas}/${activas.length} cumplidas</span></div><div class="pad">`;
+    activas.forEach(e => {
+      const st = P.encomiendas[e.id] || {avance:0, completada:false};
       const pctm = Math.round((Math.min(st.avance, e.meta)/e.meta)*100);
       const rare = e.premio >= 50 ? 'Legendaria' : e.premio >= 35 ? 'Rara' : 'Común';
       html += `<div class="card mision">
@@ -209,7 +246,7 @@
             <div class="mision__nom">${esc(e.nombre)}</div>
             <div class="mision__rare">${rare} · meta ${e.meta}</div>
           </div>
-          <span class="mision__premio">+${e.premio}</span>
+          <span class="mision__premio">+${e.premio}💎</span>
         </div>
         <p class="mision__desc">${esc(e.desc)}</p>
         <p class="mision__mirano">“${esc(e.mirano)}”</p>
@@ -224,13 +261,13 @@
     });
     html += `</div>`;
 
-    // Recompensas dentro de expedición
-    html += `<div class="h-sec pad"><h2>Recompensas</h2><span>${P.puntos} pts</span></div><div class="pad">`;
+    // RECOMPENSAS (gemas)
+    html += `<div class="h-sec pad"><h2>Recompensas</h2><span>💎 ${P.gemas} gemas</span></div><div class="pad">`;
     REGLAS.recompensas.forEach(r => {
       const idxR = REGLAS.indiceRango(rango.id);
       const idxNeed = r.rango ? REGLAS.indiceRango(r.rango) : 0;
       const bloqRango = idxR < idxNeed;
-      const bloqPts = P.puntos < r.puntos;
+      const bloqPts = P.gemas < r.gemas;
       html += `<div class="card reward">
         <span class="reward__ico">${esc(r.ico)}</span>
         <div class="reward__body">
@@ -239,7 +276,7 @@
           ${bloqRango ? `<span class="lock">🔒 Rango ${esc(REGLAS.rangos[idxNeed].nombre)}</span>` : ''}
         </div>
         <div class="reward__cta">
-          <div class="reward__pts">${r.puntos}</div>
+          <div class="reward__pts">${r.gemas}💎</div>
           <button class="btn btn--sm ${bloqRango||bloqPts?'btn--ghost':'btn--solid'}" ${bloqRango?'disabled':''}
             data-cobrar="${esc(r.id)}">${bloqRango?'Bloqueado':'Canjear'}</button>
         </div>
@@ -252,47 +289,51 @@
   /* ===== JUEGOS ===== */
   function renderJuegos() {
     const juegos = (CONTENIDO.juegos||[]).filter(j => j.activo);
-    let html = `<div class="pad"><p class="eyebrow" style="margin-top:8px">Arcade del universo</p>
-      <div class="h-sec"><h2>Juegos</h2><span>Sin registro</span></div></div><div class="pad">`;
+    let html = secHead('Arcade del universo', 'Juegos', 'Sin registro. Jugar suma gemas para tus recompensas.');
+    html += `<div class="pad" style="margin-top:6px">`;
     if (!juegos.length) html += `<p class="empty">Pronto habrá juegos nuevos.</p>`;
     juegos.forEach(j => {
       const g = P.juegos[j.id];
-      html += `<div class="card tile tile--wide tile--hot" data-juego="${esc(j.id)}" style="margin-bottom:12px">
-        <span class="tile__ico">${esc(j.ico)}</span>
+      html += `<div class="card hook__card--wide" data-juego="${esc(j.id)}" style="cursor:pointer;clip-path:var(--notch);padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:12px">
+        <span style="font-size:32px">${esc(j.ico)}</span>
         <div style="flex:1">
-          <div class="nov__tag">${esc(j.etiqueta||'')}</div>
-          <div class="tile__t">${esc(j.nombre)}</div>
-          <div class="tile__d">${esc(j.desc)}</div>
-          ${g ? `<div class="tile__d" style="color:var(--amarillo-hex)">Mejor: ${g.mejor||0} · ${g.partidas||0} partidas</div>` : ''}
+          <div class="novimg__tag" style="color:var(--acento)">${esc(j.etiqueta||'')}</div>
+          <div class="hook__t" style="font-size:17px">${esc(j.nombre)}</div>
+          <div class="hook__d">${esc(j.desc)}</div>
+          ${g ? `<div class="hook__d" style="color:var(--amarillo-hex)">Mejor: ${g.mejor||0} · ${g.partidas||0} partidas</div>` : ''}
         </div>
         <span class="btn btn--sm btn--solid">Jugar</span>
       </div>`;
     });
     html += `<p style="font-size:12px;opacity:.7;text-align:center;margin-top:8px">
-      Jugar suma puntos para tus recompensas (hasta ${REGLAS.economia.topePuntosJuegoDia}/día).</p></div>`;
+      Máximo ${REGLAS.economia.topeGemasJuegoDia} gemas al día desde los juegos.</p></div>`;
     $('#v-juegos').innerHTML = html;
   }
 
   /* ===== ARCHIVO ===== */
   function renderArchivo() {
     const entradas = CONTENIDO.archivo || [];
-    let html = `<div class="pad"><p class="eyebrow" style="margin-top:8px">La enciclopedia del universo</p>
-      <div class="h-sec"><h2>Archivo Cíclope</h2><span>${entradas.filter(e=>Estado.archivoAbierto(P,e)).length}/${entradas.length}</span></div></div>`;
+    const prog = Estado.archivoProgreso(P, entradas);
+    let html = secHead('La enciclopedia del universo', 'Archivo', 'Cada visita y misión desbloquea un secreto. Toca lo que ya descubriste.');
+    html += `<div class="h-sec pad"><h2 style="font-size:16px">Descubierto</h2><span>${prog.abiertas}/${prog.total}</span></div>`;
     html += `<div class="pad arch-grid">`;
     entradas.forEach((e, i) => {
       const abierto = Estado.archivoAbierto(P, e);
+      const imgTag = e.img ? `<img class="arch__img" src="${esc(e.img)}" alt="" loading="lazy">` : '';
       if (abierto) {
-        html += `<div class="card arch" data-arch="${i}">
-          <div class="arch__cat">${esc(e.cat)}</div>
-          <div class="arch__ico">${esc(e.ico)}</div>
-          <div class="arch__t">${esc(e.titulo)}</div>
-          <div class="arch__rare">${esc(e.rareza||'')}</div>
+        html += `<div class="arch" data-arch="${i}">
+          ${imgTag}<div class="arch__scrim"></div>
+          <div class="arch__emoji">${esc(e.ico)}</div>
+          <div class="arch__body">
+            <div class="arch__cat">${esc(e.cat)}</div>
+            <div class="arch__t">${esc(e.titulo)}</div>
+            <div class="arch__rare">${esc(e.rareza||'')}</div>
+          </div>
         </div>`;
       } else {
-        html += `<div class="card arch arch--locked">
-          <div class="arch__cat">${esc(e.cat)}</div>
-          <div class="arch__ico">${esc(e.ico)}</div>
-          <div class="arch__t">${esc(e.titulo)}</div>
+        html += `<div class="arch arch--locked">
+          ${imgTag}<div class="arch__scrim"></div>
+          <div class="arch__emoji">${esc(e.ico)}</div>
           <div class="arch__lock"><span>🔒</span><small>${esc(Estado.desbloqueoTexto(e))}</small></div>
         </div>`;
       }
@@ -301,37 +342,86 @@
     $('#v-archivo').innerHTML = html;
   }
 
-  /* ===== PERFIL ===== */
+  /* ===== PERFIL / BITÁCORA ===== */
   function renderPerfil() {
     const rango = Estado.rango(P), sig = Estado.siguiente(P), pct = Estado.nave(P);
-    const nombre = P.apodo || 'Explorador anónimo';
-    let html = `<div class="pad">
-      <div class="card card--purple ficha">
-        <div class="ficha__ava">${esc(rango.ico)}</div>
-        <div class="ficha__nom">${esc(nombre)}</div>
-        <div class="ficha__rango">${esc(rango.nombre)}</div>
-        <div class="ficha__edit" data-modal="apodo">${P.apodo?'Cambiar apodo':'Ponte un apodo ✎'}</div>
-      </div>
-      <div class="stats">
-        <div class="card stat"><b>${P.sellos}</b><span>Sellos</span></div>
-        <div class="card stat"><b>${P.puntos}</b><span>Puntos</span></div>
-        <div class="card stat"><b>${P.visitas.length}</b><span>Visitas</span></div>
-      </div>
-      <div class="card nave" style="margin-bottom:16px">
-        <div class="nave__top"><div class="nave__rango"><b>Nave de Mirano</b></div><span class="nave__pct">${pct}%</span></div>
-        <div class="bar"><div class="bar__fill" style="width:${pct}%"></div></div>
-        <p class="nave__hint">${sig?`${sig.sellos-P.sellos} sello(s) para ${esc(sig.nombre)}`:'Nave lista para despegar.'}</p>
-      </div>`;
+    const piezas = Estado.navePiezas(P);
+    const nombre = P.apodo || 'Explorador';
 
-    // código de referido
-    html += `<div class="card listrow" data-copiar="${esc(P.codigoRef)}">
+    let html = secHead('Tu bitácora de explorador', 'Perfil');
+    html += `<div class="pad">`;
+
+    // ---- CARD DE EXPLORACIÓN (estilo wallet) ----
+    html += `<div class="pass">
+      <div class="pass__top">
+        <div class="pass__brand"><img src="assets/img/isotipo.png" alt=""><span>UNIVERSO CÍCLOPE</span></div>
+        <span class="pass__lvl">NIVEL ${rango.nivel}</span>
+      </div>
+      <div class="pass__holder">
+        <div class="pass__label">Explorador</div>
+        <div class="pass__name">${esc(nombre)}</div>
+        <div class="pass__rank">${esc(rango.ico)} ${esc(rango.nombre)}</div>
+      </div>
+      <div class="pass__grid">
+        <div class="pass__stat"><b>${P.sellos}</b><span>Sellos</span></div>
+        <div class="pass__stat"><b>${P.gemas}</b><span>Gemas</span></div>
+        <div class="pass__stat"><b>${P.visitas.length}</b><span>Visitas</span></div>
+      </div>
+      <div class="pass__strip">${Array.from({length:16}).map(()=>'<i></i>').join('')}</div>
+      <div class="pass__code">${esc(P.codigoRef)}</div>
+    </div>
+    <div class="ficha__edit" data-modal="apodo">${P.apodo?'✎ Cambiar mi nombre':'✎ Ponte un nombre de explorador'}</div>`;
+
+    // ---- NAVE DE MIRANO (con explicación clara) ----
+    html += `<div class="card nave" style="margin-bottom:16px">
+      <div class="nave__top"><div class="nave__rango"><span class="nave__ico">🛸</span><b>La nave de Mirano</b></div><span class="nave__pct">${pct}%</span></div>
+      <div class="bar"><div class="bar__fill" style="width:${pct}%"></div></div>
+      <p class="nave__hint">La nave de Mirano se averió al caer en la Tierra. <b>Cada visita tuya repara una pieza.</b> Llevas ${piezas.hechas} de ${piezas.total}. ${pct>=100?'¡Está lista para despegar!':'Cuando llegue al 100%, Mirano retomará su viaje.'}</p>
+    </div>`;
+
+    // ---- ESCALERA DE RANGOS (5 niveles) ----
+    html += `<div class="h-sec"><h2 style="font-size:16px">Rango de explorador</h2><span>Nivel ${rango.nivel}/5</span></div>`;
+    html += `<div class="card ladder">`;
+    REGLAS.rangos.forEach(r => {
+      const actual = r.id === rango.id;
+      const hecho = P.sellos >= r.sellos && !actual;
+      html += `<div class="ladder__row ${actual?'on':''} ${hecho?'done':''}">
+        <div class="ladder__ico">${esc(r.ico)}</div>
+        <div class="ladder__b"><b>${esc(r.nombre)}</b><small>${esc(r.lema)}</small></div>
+        <div class="ladder__n">${r.sellos===0?'inicio':r.sellos+' sellos'}</div>
+      </div>`;
+    });
+    html += `</div>`;
+    if (sig) html += `<p style="font-size:12.5px;opacity:.8;text-align:center;margin:-6px 0 16px">Te faltan <b>${sig.sellos - P.sellos} visita(s)</b> para ser ${esc(sig.nombre)}.</p>`;
+
+    // ---- NOTIFICACIONES (Card de retención estilo WonCards) ----
+    html += `<div class="card listrow" data-modal="notis" style="cursor:pointer;margin-top:4px">
+      <div class="listrow__l"><span class="listrow__ico">🔔</span>
+        <div><b>${P.notis?'Notificaciones activadas':'Activar notificaciones'}</b>
+          <small>${P.notis?'Te avisaremos de expediciones y premios':'Entérate de nuevos productos y expediciones'}</small></div></div>
+      <span class="btn btn--sm ${P.notis?'btn--ghost':'btn--solid'}">${P.notis?'✓':'Activar'}</span></div>`;
+
+    // ---- código de referido ----
+    html += `<div class="card listrow" data-copiar="${esc(P.codigoRef)}" style="cursor:pointer">
       <div class="listrow__l"><span class="listrow__ico">📣</span>
-        <div><b>Tu código de expedición</b><small>Invita cíclopes y gana</small></div></div>
+        <div><b>Tu código de expedición</b><small>Invita cíclopes y gana gemas</small></div></div>
       <span class="code">${esc(P.codigoRef)}</span></div>`;
 
-    // canjes activos
+    // ---- visitas registradas (prueba de que se registró) ----
+    if (P.visitas.length) {
+      html += `<div class="h-sec"><h2 style="font-size:16px">Tus visitas</h2><span>${P.visitas.length}</span></div>`;
+      P.visitas.slice(0,6).forEach(v => {
+        const f = new Date(v.fecha);
+        const fecha = isNaN(f) ? '' : f.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+        html += `<div class="card listrow"><div class="listrow__l"><span class="listrow__ico">📍</span>
+          <div><b>Folio ${esc(v.folio)}</b><small>${esc(v.base||'Base')} · ${esc(fecha)}</small></div></div>
+          <span class="chip-ok">✓</span></div>`;
+      });
+    }
+
+    // ---- canjes ----
     if (P.canjes.length) {
-      html += `<div class="h-sec"><h2 style="font-size:17px">Tus canjes</h2></div>`;
+      html += `<div class="h-sec"><h2 style="font-size:16px">Tus canjes</h2></div>`;
       P.canjes.slice(0,5).forEach(c => {
         html += `<div class="card listrow"><div class="listrow__l"><span class="listrow__ico">🎁</span>
           <div><b>${esc(c.nombre)}</b><small>Muéstralo en caja</small></div></div>
@@ -339,9 +429,9 @@
       });
     }
 
-    // enlaces de marca
+    // ---- enlaces de marca ----
     const C = CONTENIDO;
-    html += `<div class="h-sec"><h2 style="font-size:17px">Encuéntranos</h2></div>
+    html += `<div class="h-sec"><h2 style="font-size:16px">Encuéntranos</h2></div>
       <a class="card listrow" href="${esc(C.compartir.instagram)}" target="_blank" rel="noopener">
         <div class="listrow__l"><span class="listrow__ico">📸</span><div><b>Instagram</b><small>@elanillodelciclope</small></div></div><span>›</span></a>
       <a class="card listrow" href="${esc(C.compartir.tiktok)}" target="_blank" rel="noopener">
@@ -351,8 +441,8 @@
         <div class="listrow__l"><span class="listrow__ico">📍</span><div><b>Base ${esc(b.nombre)}</b><small>${esc(b.zona)}</small></div></div><span>›</span></a>`;
     });
 
-    html += `<div style="margin-top:20px"><button class="btn btn--ghost btn--sm" data-reset>Reiniciar mi expedición</button></div>`;
-    html += `</div><p class="foot">v1 · Sin registro. Tu progreso vive en este teléfono.</p>`;
+    html += `<div style="margin-top:20px;text-align:center"><button class="btn btn--ghost btn--sm" data-reset>Reiniciar mi bitácora</button></div>`;
+    html += `</div><p class="foot">v2 · Sin registro. Tu progreso vive en este teléfono.</p>`;
     $('#v-perfil').innerHTML = html;
   }
 
@@ -365,17 +455,16 @@
     $('#player-frame').src = j.archivo;
     player.classList.add('abierto');
     document.body.classList.add('bloqueado');
-    // registra una partida + puntos simbólicos (tope diario en Acciones)
-    Acciones.sumarPuntosJuego(P, id, 4, null);
+    Acciones.sumarGemasJuego(P, id, 4, null);
     P = Explorador.actual();
-    $('#hdr-pts').textContent = P.puntos;
+    $('#hdr-pts').textContent = P.gemas;
   }
   function cerrarJuego() {
     player.classList.remove('abierto');
     document.body.classList.remove('bloqueado');
     $('#player-frame').src = 'about:blank';
-    toast('Jugaste una partida · +puntos en tu bitácora');
-    render(location.hash.replace('#','') || 'inicio');
+    toast('Jugaste una partida · +gemas en tu bitácora');
+    render(document.body.dataset.sec || 'inicio');
   }
   $('#player-x').addEventListener('click', cerrarJuego);
 
@@ -395,25 +484,39 @@
   function modalSellar() {
     const bases = REGLAS.sucursales.map(s => `<option value="${esc(s.nombre)}">${esc(s.nombre)}</option>`).join('');
     abrirModal(`
-      <div class="modal__ico">🎟️</div>
-      <div class="modal__title">Sellar visita</div>
-      <p class="modal__text">Escribe el folio de tu ticket. Mirano hará el resto.</p>
+      <div class="modal__ico">📸</div>
+      <div class="modal__title">Registrar visita</div>
+      <ol class="pasos">
+        <li>Pide tu ticket en caja al pagar.</li>
+        <li>Escribe el folio que aparece en el ticket.</li>
+        <li>Mirano lo guarda en tu bitácora al instante.</li>
+      </ol>
       <div class="field"><label>Folio del ticket</label><input id="in-folio" placeholder="Ej. A-1042" autocomplete="off"></div>
       <div class="field"><label>¿En qué base?</label><select id="in-base">${bases}</select></div>
       <div class="msg-err" id="sellar-err"></div>
-      <button class="btn btn--solid btn--full" id="btn-sellar">Sellar</button>`);
+      <button class="btn btn--solid btn--full" id="btn-sellar">Registrar</button>
+      <p class="field__hint" style="margin-top:12px;text-align:center">Hoy en modo demo se registra al momento. Al conectar la caja validaremos que el folio sea real y del día.</p>`);
     $('#btn-sellar').addEventListener('click', () => {
       const folio = $('#in-folio').value, base = $('#in-base').value;
       const r = Acciones.sellar(P, folio, base);
       if (!r.ok) { $('#sellar-err').textContent = r.msg; return; }
       P = Explorador.actual();
       abrirModal(`
-        <div class="modal__ico">${r.doble?'🌙':'👁️'}</div>
-        <div class="modal__title">${r.doble?'¡Sello doble!':'Sello acreditado'}</div>
+        <div class="modal__ico">${r.doble?'🌙':'✅'}</div>
+        <div class="modal__title">${r.doble?'¡Visita doble!':'¡Visita registrada!'}</div>
         <p class="modal__mirano">“${esc(r.msg)}”</p>
-        <p class="modal__text">+${r.sellos} sello${r.sellos>1?'s':''} · +${REGLAS.economia.puntosPorVisita*r.sellos} puntos</p>
-        <button class="btn btn--solid btn--full" id="btn-ok">Seguir explorando</button>`);
-      $('#btn-ok').addEventListener('click', () => { cerrarModal(); render('expedicion'); });
+        <div class="card" style="padding:14px;margin-bottom:16px;text-align:center">
+          <div style="font-family:var(--panelfont);font-size:14px;letter-spacing:.12em;color:var(--ambar)">FOLIO ${esc(r.folio)}</div>
+          <div style="display:flex;justify-content:center;gap:20px;margin-top:8px">
+            <div><b style="font-family:var(--panelfont);font-size:22px;color:var(--amarillo-hex)">+${r.sellos}</b><div style="font-size:11px;opacity:.7">SELLO${r.sellos>1?'S':''}</div></div>
+            <div><b style="font-family:var(--panelfont);font-size:22px;color:var(--amarillo-hex)">+${r.gemas}</b><div style="font-size:11px;opacity:.7">GEMAS</div></div>
+          </div>
+        </div>
+        ${r.subioRango?`<p class="modal__text" style="color:var(--amarillo-hex)">${esc(REGLAS.voz.rangoNuevo)} Ahora eres ${esc(r.rango.nombre)}.</p>`:''}
+        <button class="btn btn--solid btn--full" id="btn-ok">Ver mi bitácora</button>
+        <button class="btn btn--ghost btn--full" id="btn-mas" style="margin-top:10px">Registrar otra</button>`);
+      $('#btn-ok').addEventListener('click', () => { cerrarModal(); ir('perfil'); });
+      $('#btn-mas').addEventListener('click', () => modalSellar());
     });
   }
 
@@ -427,7 +530,7 @@
       <div class="modal__title">${esc(r.nombre)}</div>
       <p class="modal__mirano">“${esc(res.msg)}”</p>
       <div class="modal__code">${esc(res.codigo)}</div>
-      <p class="modal__text">Muéstralo en caja. Se descuenta de tus puntos.</p>
+      <p class="modal__text">Muéstralo en caja. Se descontó de tus gemas.</p>
       <button class="btn btn--solid btn--full" id="btn-ok">Listo</button>`);
     $('#btn-ok').addEventListener('click', () => { cerrarModal(); render('expedicion'); });
   }
@@ -436,8 +539,8 @@
     abrirModal(`
       <div class="modal__ico">✎</div>
       <div class="modal__title">Tu nombre de explorador</div>
-      <p class="modal__text">Opcional. Sirve para presumir tu progreso.</p>
-      <div class="field"><label>Apodo</label><input id="in-apodo" maxlength="18" value="${esc(P.apodo)}" placeholder="Cazador del Anillo"></div>
+      <p class="modal__text">Opcional. Aparece en tu Card de Exploración.</p>
+      <div class="field"><label>Nombre</label><input id="in-apodo" maxlength="18" value="${esc(P.apodo)}" placeholder="Cazador del Anillo"></div>
       <button class="btn btn--solid btn--full" id="btn-apodo">Guardar</button>`);
     $('#btn-apodo').addEventListener('click', () => {
       Acciones.ponerApodo(P, $('#in-apodo').value);
@@ -473,12 +576,53 @@
     const e = CONTENIDO.archivo[i]; if (!e || !Estado.archivoAbierto(P, e)) return;
     Acciones.descubrirArchivo(P, e.titulo);
     abrirModal(`
-      <div class="modal__ico">${esc(e.ico)}</div>
+      ${e.img ? `<img class="modal__img" src="${esc(e.img)}" alt="">` : `<div class="modal__ico">${esc(e.ico)}</div>`}
       <div class="eyebrow" style="text-align:center">${esc(e.cat)} · ${esc(e.rareza||'')}</div>
-      <div class="modal__title">${esc(e.titulo)}</div>
-      <p class="modal__text" style="text-align:left">${esc(e.texto)}</p>
+      <div class="modal__title">${esc(e.ico)} ${esc(e.titulo)}</div>
+      <p class="modal__text" style="text-align:left;line-height:1.6">${esc(e.texto)}</p>
       <button class="btn btn--ghost btn--full" id="btn-ok">Cerrar</button>`);
     $('#btn-ok').addEventListener('click', cerrarModal);
+  }
+
+  function modalNotis() {
+    const appId = (CONTENIDO.notificaciones||{}).onesignalAppId;
+    abrirModal(`
+      <div class="modal__ico">🔔</div>
+      <div class="modal__title">Notificaciones</div>
+      <p class="modal__text">Recibe avisos de nuevas expediciones, productos y premios. Como una tarjeta de lealtad, pero viva.</p>
+      ${appId
+        ? `<button class="btn btn--solid btn--full" id="btn-notis">Activar notificaciones</button>`
+        : `<p class="modal__mirano">Las notificaciones se encienden muy pronto. Mirano está afinando la señal.</p>
+           <button class="btn btn--ghost btn--full" id="btn-ok">Entendido</button>`}
+      <p class="field__hint" style="margin-top:12px;text-align:center">En iPhone, agrega la app a tu pantalla de inicio para recibirlas.</p>`);
+    if (appId) {
+      $('#btn-notis').addEventListener('click', () => pedirNotis());
+    } else {
+      $('#btn-ok').addEventListener('click', cerrarModal);
+    }
+  }
+
+  /* ---------------- ONESIGNAL (push) ---------------- */
+  function initOneSignal() {
+    const appId = (CONTENIDO.notificaciones||{}).onesignalAppId;
+    if (!appId) return;
+    const s = document.createElement('script');
+    s.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+    s.defer = true; document.head.appendChild(s);
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async (OneSignal) => {
+      try { await OneSignal.init({ appId, allowLocalhostAsSecureOrigin:true }); } catch(_) {}
+    });
+  }
+  function pedirNotis() {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async (OneSignal) => {
+      try {
+        await OneSignal.Notifications.requestPermission();
+        Acciones.activarNotis(P, true); P = Explorador.actual();
+        cerrarModal(); render('perfil'); toast('¡Notificaciones activadas!');
+      } catch(_) { toast('No se pudo activar. Revisa los permisos.'); }
+    });
   }
 
   /* ---------------- DELEGACIÓN GLOBAL DE CLICKS ---------------- */
@@ -491,14 +635,15 @@
     if (el.dataset.arch)    return modalArch(+el.dataset.arch);
     if (el.dataset.copiar)  { navigator.clipboard?.writeText(el.dataset.copiar); toast('Código copiado'); return; }
     if (el.dataset.reset)   {
-      if (confirm('¿Reiniciar tu expedición? Se borra tu progreso en este teléfono.')) {
-        Explorador.borrar(); P = Explorador.actual(); render('perfil'); toast('Expedición reiniciada');
+      if (confirm('¿Reiniciar tu bitácora? Se borra tu progreso en este teléfono.')) {
+        Explorador.borrar(); P = Explorador.actual(); render('perfil'); toast('Bitácora reiniciada');
       } return;
     }
     if (el.dataset.modal) {
       if (el.dataset.modal==='sellar') return modalSellar();
       if (el.dataset.modal==='apodo')  return modalApodo();
       if (el.dataset.modal==='resena') return modalResena();
+      if (el.dataset.modal==='notis')  return modalNotis();
     }
     if (el.dataset.accion) {
       let a; try { a = JSON.parse(el.dataset.accion); } catch(_) { a = el.dataset.accion; }
@@ -510,6 +655,7 @@
   /* ---------------- ARRANQUE ---------------- */
   const inicial = (location.hash || '#inicio').replace('#','');
   ir(rutas.includes(inicial) ? inicial : 'inicio');
+  initOneSignal();
 
   /* PWA: service worker */
   if ('serviceWorker' in navigator) {
