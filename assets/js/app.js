@@ -372,7 +372,7 @@
         <div class="pass__stat"><b>${P.visitas.length}</b><span>Visitas</span></div>
       </div>
       <div class="pass__code">${esc(P.codigoRef)}</div>
-      <div class="pass__qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data=${encodeURIComponent(location.href.split('#')[0].split('?')[0] + '?ref=' + P.codigoRef)}" alt="Escanéame" loading="lazy"></div>
+      <div class="pass__qr" data-modal="invitar" style="cursor:pointer" title="Tu invitación"><img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data=${encodeURIComponent(location.href.split('#')[0].split('?')[0] + '?ref=' + P.codigoRef)}" alt="Invitación" loading="lazy"></div>
     </div>
     <div class="ficha__edit" data-modal="apodo">${P.apodo?'✎ Cambiar mi nombre':'✎ Ponte un nombre de explorador'}</div>`;
 
@@ -405,11 +405,11 @@
           <small>${P.notis?'Te avisaremos de expediciones y premios':'Entérate de nuevos productos y expediciones'}</small></div></div>
       <span class="btn btn--sm ${P.notis?'btn--ghost':'btn--solid'}">${P.notis?'✓':'Activar'}</span></div>`;
 
-    // ---- código de referido ----
-    html += `<div class="card listrow" data-copiar="${esc(P.codigoRef)}" style="cursor:pointer">
+    // ---- invitar (referidos) ----
+    html += `<div class="card listrow" data-modal="invitar" style="cursor:pointer">
       <div class="listrow__l"><span class="listrow__ico">📣</span>
-        <div><b>Tu código de expedición</b><small>Invita cíclopes y gana gemas</small></div></div>
-      <span class="code">${esc(P.codigoRef)}</span></div>`;
+        <div><b>Invita cíclopes</b><small>${P.referidos||0} invitado(s) · gana 20 gemas por cada uno que visite</small></div></div>
+      <span class="btn btn--sm btn--solid">Invitar</span></div>`;
 
     // ---- visitas registradas (prueba de que se registró) ----
     if (P.visitas.length) {
@@ -640,6 +640,27 @@
     $('#btn-ok').addEventListener('click', cerrarModal);
   }
 
+  function modalInvitar() {
+    const link = location.href.split('#')[0].split('?')[0] + '?ref=' + P.codigoRef;
+    const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=1&data=' + encodeURIComponent(link);
+    const msg = '¡Únete al Universo Cíclope de El Anillo del Cíclope con mi código ' + P.codigoRef + '! ';
+    abrirModal(`
+      <div class="modal__ico">📣</div>
+      <div class="modal__title">Invita cíclopes</div>
+      <p class="modal__text">Comparte tu código o QR. Cuando tu invitado registre su <b>primera visita</b>, tú ganas <b>20 gemas</b>. Ya invitaste a <b>${P.referidos||0}</b>.</p>
+      <div style="text-align:center;margin-bottom:16px"><img src="${qr}" alt="Tu código QR" style="width:200px;height:200px;background:#fff;padding:8px;border-radius:14px;display:inline-block"></div>
+      <div class="modal__code">${esc(P.codigoRef)}</div>
+      <button class="btn btn--solid btn--full" id="btn-share">📤 Compartir mi invitación</button>
+      <button class="btn btn--ghost btn--full" id="btn-copy" style="margin-top:10px">Copiar link</button>`);
+    $('#btn-share').addEventListener('click', async () => {
+      if (navigator.share) { try { await navigator.share({ title:'Universo Cíclope', text:msg, url:link }); } catch(_){} }
+      else { try { await navigator.clipboard.writeText(msg + link); toast('Invitación copiada'); } catch(_){} }
+    });
+    $('#btn-copy').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(link); toast('Link copiado'); } catch(_){}
+    });
+  }
+
   /* ---------------- ONESIGNAL (push) ---------------- */
   function initOneSignal() {
     const appId = (CONTENIDO.notificaciones||{}).onesignalAppId;
@@ -717,6 +738,7 @@
       if (el.dataset.modal==='resena') return modalResena();
       if (el.dataset.modal==='notis')  return modalNotis();
       if (el.dataset.modal==='ayuda')  return modalAyuda();
+      if (el.dataset.modal==='invitar') return modalInvitar();
     }
     if (el.dataset.accion) {
       let a; try { a = JSON.parse(el.dataset.accion); } catch(_) { a = el.dataset.accion; }
@@ -740,6 +762,16 @@
     }
     return cambio;
   }
+
+  // captura de invitación (?ref=CODE del link/QR de otro explorador)
+  (function(){
+    const cod = new URLSearchParams(location.search).get('ref');
+    if (cod && Acciones.capturarReferido(P, cod)) {
+      P = Explorador.actual();
+      setTimeout(() => toast('¡Te invitó un explorador! Registra una visita y ambos ganan gemas.'), 1400);
+    }
+    if (cod) history.replaceState(null, '', location.pathname + location.hash);
+  })();
 
   const inicial = (location.hash || '#inicio').replace('#','');
   ir(rutas.includes(inicial) ? inicial : 'inicio');

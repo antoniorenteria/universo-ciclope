@@ -42,6 +42,7 @@ function handle(e, data) {
   if (accion === 'guardar') return json(guardar(data.perfil));
   if (accion === 'cargar')  return json(cargar(data.id || (e.parameter && e.parameter.id)));
   if (accion === 'config')  return json({ ok: true, config: configLeer() }); // la app lee el contenido
+  if (accion === 'referido') return json(acreditarReferido(data.invitadoId, data.codigo));
   if (accion === 'folio')   return json({ ok: true }); // fase 2: validar contra Loyverse
   // --- de admin (requieren clave) ---
   if (accion === 'login')         return json({ ok: key === ADMIN_KEY });
@@ -114,6 +115,45 @@ function cargar(id) {
   var blob = sh.getRange(row, 9).getValue();
   try { return { ok: true, perfil: JSON.parse(blob) }; }
   catch (_) { return { ok: true, perfil: null }; }
+}
+
+/* ---------- REFERIDOS ----------
+   Paga GEMAS_REFERIDO al explorador dueño de 'codigo' cuando su
+   invitado hace su primera visita. Se paga UNA sola vez por
+   invitado (se registra en la hoja "Referidos"). */
+const GEMAS_REFERIDO = 20;
+
+function acreditarReferido(invitadoId, codigo) {
+  if (!invitadoId || !codigo) return { ok: false };
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(8000); } catch (_) { return { ok: false, msg: 'ocupado' }; }
+  try {
+    var ss = getSS();
+    var ref = ss.getSheetByName('Referidos');
+    if (!ref) { ref = ss.insertSheet('Referidos'); ref.appendRow(['invitadoId', 'codigo', 'fecha']); ref.setFrozenRows(1); }
+    var n = Math.max(ref.getLastRow() - 1, 0);
+    if (n) {
+      var ids = ref.getRange(2, 1, n, 1).getValues();
+      for (var i = 0; i < ids.length; i++) if (String(ids[i][0]) === String(invitadoId)) return { ok: true, yaAcreditado: true };
+    }
+    var sh = sheet();
+    var rows = Math.max(sh.getLastRow() - 1, 0);
+    if (rows) {
+      var data = sh.getRange(2, 1, rows, 9).getValues();
+      for (var r = 0; r < data.length; r++) {
+        var blob; try { blob = JSON.parse(data[r][8]); } catch (_) { continue; }
+        if (blob && blob.codigoRef === codigo) {
+          blob.gemas = (blob.gemas || 0) + GEMAS_REFERIDO;
+          blob.referidos = (blob.referidos || 0) + 1;
+          sh.getRange(r + 2, 4).setValue(blob.gemas);
+          sh.getRange(r + 2, 9).setValue(JSON.stringify(blob));
+          ref.appendRow([invitadoId, codigo, new Date()]);
+          return { ok: true, acreditado: true };
+        }
+      }
+    }
+    return { ok: false, msg: 'referidor no encontrado' };
+  } finally { lock.releaseLock(); }
 }
 
 /* ---------- PANEL DE ADMINISTRACIÓN ---------- */

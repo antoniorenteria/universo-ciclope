@@ -27,6 +27,9 @@ const Explorador = {
       juegos: {},             // { id: { partidas, mejor } }
       visto: {},              // { seccion: true } para "continuar explorando"
       notis: false,           // ¿activó notificaciones push?
+      referidoPor: '',        // código del explorador que lo invitó
+      referidoAcreditado: false, // ¿ya se le pagó al que invitó?
+      referidos: 0,           // a cuántos ha invitado (que ya visitaron)
       codigoRef: 'CIC-' + Math.random().toString(36).slice(2, 6).toUpperCase(),
       id: 'UC-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), // id de dispositivo (backend)
       sync: 0,                // timestamp de última sincronización con el servidor
@@ -148,6 +151,13 @@ const Acciones = {
     this._avanzarMisiones(p, { tipo:'visita', dia, base });
     Explorador.guardar(p);
 
+    // referido: al hacer su PRIMERA visita, se le paga gemas a quien lo invitó
+    if (p.referidoPor && !p.referidoAcreditado) {
+      p.referidoAcreditado = true;
+      Explorador.guardar(p);
+      if (window.Sync) window.Sync.referido(p.id, p.referidoPor);
+    }
+
     const rangoDespues = Estado.rango(p);
     const subioRango = rangoAntes !== rangoDespues.id;
     const voz = REGLAS.voz.selloOk[p.visitas.length % REGLAS.voz.selloOk.length];
@@ -221,6 +231,16 @@ const Acciones = {
     p.notis = !!valor; Explorador.guardar(p); return p;
   },
 
+  /* Guarda quién invitó a este explorador (una sola vez, y nunca
+     a sí mismo). Devuelve true si se registró por primera vez. */
+  capturarReferido(p, codigo) {
+    codigo = (codigo || '').trim().toUpperCase();
+    if (!codigo || p.referidoPor || codigo === p.codigoRef) return false;
+    p.referidoPor = codigo;
+    Explorador.guardar(p);
+    return true;
+  },
+
   _avanzarMisiones(p, evento) {
     REGLAS.encomiendas.forEach(e => {
       if (!e.activa) return;
@@ -267,6 +287,19 @@ const Sync = {
         }).catch(()=>{});
       } catch(_) {}
     }, 1200);
+  },
+
+  /* Avisa al servidor que un invitado ya visitó -> le paga gemas
+     a quien lo invitó (el servidor lo hace una sola vez). */
+  referido(invitadoId, codigo) {
+    if (!this.activo() || !invitadoId || !codigo) return;
+    try {
+      fetch(ENDPOINT, {
+        method:'POST', keepalive:true,
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({ accion:'referido', invitadoId, codigo }),
+      }).catch(()=>{});
+    } catch(_) {}
   },
 
   /* Lee la configuración de contenido editada desde el panel de
