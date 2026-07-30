@@ -28,6 +28,8 @@ const Explorador = {
       visto: {},              // { seccion: true } para "continuar explorando"
       notis: false,           // ¿activó notificaciones push?
       codigoRef: 'CIC-' + Math.random().toString(36).slice(2, 6).toUpperCase(),
+      id: 'UC-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), // id de dispositivo (backend)
+      sync: 0,                // timestamp de última sincronización con el servidor
     };
   },
 
@@ -44,7 +46,9 @@ const Explorador = {
   },
 
   guardar(p) {
+    p.sync = Date.now();                       // marca de tiempo para el backend
     try { localStorage.setItem(LLAVE, JSON.stringify(p)); } catch (_) {}
+    if (window.Sync) window.Sync.subir(p);     // respaldo online (si hay endpoint)
     return p;
   },
 
@@ -151,17 +155,40 @@ const Acciones = {
              totalSellos: p.sellos, totalGemas: p.gemas, folio, msg: voz };
   },
 
-  /* Gemas por jugar, con tope diario para que los juegos no
-     sustituyan a las visitas. */
-  sumarGemasJuego(p, juegoId, gemas, mejor) {
-    const tope = REGLAS.economia.topeGemasJuegoDia;
-    const g = p.juegos[juegoId] || { partidas:0, mejor:0 };
+  /* Registrar una partida. Da gemas SOLO la primera vez que
+     descubres el juego (bonus). Después, jugar por jugar NO da
+     gemas: hay que superar LOGROS de puntaje (ver otorgarLogro). */
+  registrarPartida(p, juegoId, mejor) {
+    const g = p.juegos[juegoId] || { partidas:0, mejor:0, bonus:false, logros:[], dia:'', gemasHoy:0 };
     g.partidas += 1;
     if (mejor != null && mejor > g.mejor) g.mejor = mejor;
+    let gemas = 0, primera = false;
+    if (!g.bonus) { g.bonus = true; gemas = REGLAS.economia.gemasPrimerJuego; p.gemas += gemas; primera = true; }
     p.juegos[juegoId] = g;
-    p.gemas += Math.min(tope, Math.max(0, gemas | 0));
     Explorador.guardar(p);
-    return p;
+    return { gemas, primera };
+  },
+
+  /* Otorga gemas por LOGROS de puntaje (cuando el juego reporte
+     su score). Cada logro se paga una sola vez y respeta el tope
+     diario por juego (se reinicia cada día). */
+  otorgarLogros(p, juegoId, score) {
+    const metas = (REGLAS.logrosJuego || {})[juegoId] || [];
+    const g = p.juegos[juegoId] || { partidas:0, mejor:0, bonus:false, logros:[], dia:'', gemasHoy:0 };
+    const hoy = new Date().toISOString().slice(0,10);
+    if (g.dia !== hoy) { g.dia = hoy; g.gemasHoy = 0; }
+    let dadas = 0;
+    metas.forEach((m, i) => {
+      const clave = 'l'+i;
+      if (score >= m.score && !(g.logros||[]).includes(clave)) {
+        const espacio = REGLAS.economia.topeGemasJuegoDia - g.gemasHoy;
+        const dar = Math.min(m.gemas, Math.max(0, espacio));
+        if (dar > 0) { g.logros = (g.logros||[]).concat(clave); g.gemasHoy += dar; p.gemas += dar; dadas += dar; }
+      }
+    });
+    p.juegos[juegoId] = g;
+    Explorador.guardar(p);
+    return dadas;
   },
 
   descubrirArchivo(p, id) {
@@ -212,27 +239,76 @@ const Acciones = {
 };
 
 /* ============================================================
-   BACKEND  ·  lo único que cambia al conectar Loyverse
+   BACKEND · respaldo online (Google Apps Script + Sheets)
    ------------------------------------------------------------
-   Hoy: simulado:true -> todo local, para probar la experiencia.
-   Mañana: simulado:false + endpoint de Apps Script que valida el
-   folio contra la API de Loyverse (existe, es de hoy/ayer, monto
-   >= consumo mínimo, y NADIE lo reclamó antes). Ese mismo endpoint
-   podrá empujar los datos al Ojo Maestro para el panel admin.
+   Pega la URL del Web App de Apps Script en ENDPOINT y todo el
+   progreso queda guardado en la nube: el usuario no pierde nada
+   aunque reinstale, y podrás ver los datos en tu Sheet / Ojo
+   Maestro. Si ENDPOINT queda vacío, la app funciona 100% local
+   (como hasta ahora), sin romperse.
+   Código del servidor: /backend/Code.gs  ·  guía en LEEME.md
   ============================================================ */
-const BACKEND = {
-  simulado: true,
-  endpoint: '', // p.ej. 'https://script.google.com/macros/s/AKfy.../exec'
-  async validarFolio(folio, base) {
-    if (this.simulado) return { ok:true };
+const ENDPOINT = ''; // <-- pega aquí la URL /exec de tu Apps Script
+
+const Sync = {
+  activo() { return !!ENDPOINT; },
+  _t: 0, _pend: null,
+
+  /* Sube el perfil (con rebote para no saturar). Fire-and-forget. */
+  subir(p) {
+    if (!this.activo()) return;
+    clearTimeout(this._pend);
+    this._pend = setTimeout(() => {
+      try {
+        fetch(ENDPOINT, {
+          method:'POST', keepalive:true,
+          headers:{'Content-Type':'text/plain;charset=utf-8'}, // evita preflight CORS
+          body: JSON.stringify({ accion:'guardar', perfil:p }),
+        }).catch(()=>{});
+      } catch(_) {}
+    }, 1200);
+  },
+
+  /* Baja el perfil del servidor al cargar. Devuelve el perfil
+     remoto o null. */
+  async bajar(id) {
+    if (!this.activo() || !id) return null;
     try {
-      const r = await fetch(`${this.endpoint}?accion=folio&folio=${encodeURIComponent(folio)}&base=${encodeURIComponent(base||'')}`);
+      const r = await fetch(`${ENDPOINT}?accion=cargar&id=${encodeURIComponent(id)}`);
+      const j = await r.json();
+      return (j && j.ok && j.perfil) ? j.perfil : null;
+    } catch(_) { return null; }
+  },
+
+  /* Al arrancar: adopta lo más reciente entre lo local y la nube. */
+  async reconciliar() {
+    if (!this.activo()) return Explorador.actual();
+    let local = Explorador.actual();
+    const remoto = await this.bajar(local.id);
+    if (remoto && (remoto.sync||0) > (local.sync||0)) {
+      // el servidor tiene una versión más nueva (p.ej. otro dispositivo)
+      local = Object.assign(Explorador.vacio(), remoto);
+      try { localStorage.setItem(LLAVE, JSON.stringify(local)); } catch(_) {}
+    } else {
+      this.subir(local); // sube lo local por si el server está atrás
+    }
+    return local;
+  },
+};
+
+/* Validación de folio contra Loyverse (fase 2, vía el mismo Apps Script) */
+const BACKEND = {
+  async validarFolio(folio, base) {
+    if (!ENDPOINT) return { ok:true }; // demo: acepta local
+    try {
+      const r = await fetch(`${ENDPOINT}?accion=folio&folio=${encodeURIComponent(folio)}&base=${encodeURIComponent(base||'')}`);
       return await r.json();
-    } catch (_) { return { ok:false, msg:'No pude verificar el folio. Intenta de nuevo.' }; }
+    } catch (_) { return { ok:true }; } // si falla la red, no bloquea la experiencia
   },
 };
 
 window.Explorador = Explorador;
 window.Estado = Estado;
 window.Acciones = Acciones;
+window.Sync = Sync;
 window.BACKEND = BACKEND;

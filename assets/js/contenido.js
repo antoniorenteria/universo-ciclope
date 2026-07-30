@@ -193,10 +193,10 @@ const CONTENIDO = {
   bases: [
     { nombre:'Revolución', zona:'Pachuca de Soto',
       maps:'https://maps.google.com/?q=El+Anillo+del+Ciclope+Revolucion',
-      resena:'' },   // <-- pega aquí el link de reseña de Revolución
+      resena:'https://g.page/r/CRVPOJoQLXaIEBM/review' },
     { nombre:'Tulipanes', zona:'Mineral de la Reforma',
       maps:'https://maps.google.com/?q=El+Anillo+del+Ciclope+Tulipanes',
-      resena:'' },   // <-- pega aquí el link de reseña de Tulipanes
+      resena:'https://g.page/r/CaqfzgVdIP5fEBM/review' },
   ],
 };
 

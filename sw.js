@@ -1,9 +1,13 @@
 /* ============================================================
    UNIVERSO CÍCLOPE · Service Worker
-   Cache "app shell" para carga inmediata y uso con conexión
-   limitada. Sube el número de versión al publicar cambios.
+   · HTML / JS / CSS  -> NETWORK-FIRST: siempre trae lo más nuevo
+     si hay internet (las actualizaciones llegan solas, sin que
+     nadie tenga que reinstalar). Cae al caché solo si no hay red.
+   · Imágenes / fuentes / audio / juegos -> CACHE-FIRST: cargan
+     al instante y se guardan la primera vez.
+   Sube VERSION al publicar para limpiar cachés viejos.
    ============================================================ */
-const VERSION = 'uc-v4';
+const VERSION = 'uc-v5';
 const SHELL = [
   './',
   './index.html',
@@ -28,19 +32,35 @@ self.addEventListener('activate', e => {
   );
 });
 
-/* Estrategia: cache-first para el shell y assets; network-first
-   para todo lo demás (juegos grandes, fuentes). Nunca rompe si
-   no hay red: sirve lo cacheado. */
+const esFresco = url =>
+  url.origin === location.origin &&
+  /\.(html|js|css|webmanifest)$|\/$/.test(url.pathname);
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+
+  // NETWORK-FIRST para el código de la app (frescura garantizada)
+  if (esFresco(url)) {
+    e.respondWith(
+      fetch(req).then(res => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy));
+        }
+        return res;
+      }).catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // CACHE-FIRST para todo lo demás (imágenes, fuentes, audio, juegos)
   e.respondWith(
     caches.match(req).then(hit => {
       if (hit) return hit;
       return fetch(req).then(res => {
         if (res && res.status === 200 && res.type === 'basic') {
-          const copy = res.clone();
-          caches.open(VERSION).then(c => c.put(req, copy));
+          const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy));
         }
         return res;
       }).catch(() => hit);

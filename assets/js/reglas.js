@@ -13,12 +13,26 @@
 
 const REGLAS = {
 
-  /* ---------- ECONOMÍA ---------------------------------------- */
+  /* ---------- ECONOMÍA ----------------------------------------
+     Regla clave: los JUEGOS casi no dan gemas (para que no se
+     farmee). Solo dan un premio la PRIMERA vez que descubres el
+     juego, y por LOGROS de puntaje (metas), con tope diario que
+     se reinicia cada día. Las gemas de verdad vienen de VISITAR.
+  ------------------------------------------------------------ */
   economia: {
-    gemasPorVisita:       10,   // gemas que da registrar una visita
-    gemasPorCadaCienPesos: 5,   // gemas extra por consumo
-    topeGemasJuegoDia:    12,   // máximo de gemas/día desde los juegos
+    gemasPorVisita:        10,  // gemas por registrar una visita
+    gemasPorCadaCienPesos:  5,  // gemas extra por consumo
+    gemasPrimerJuego:       3,  // bonus UNA sola vez al abrir cada juego
+    topeGemasJuegoDia:      6,  // máx gemas/día por CADA juego (logros); se reinicia diario
     consumoMinimo:        120,  // $ mínimos del ticket para sellar
+  },
+
+  /* Logros por puntaje dentro de cada juego. Cuando el juego
+     reporte tu score, cruzar estos umbrales da gemas (una vez
+     cada uno). Requiere que el juego mande su puntaje (fase 2). */
+  logrosJuego: {
+    gema: [ {score:2000, gemas:2}, {score:5000, gemas:3}, {score:10000, gemas:5} ],
+    ojo:  [ {score:1,    gemas:2}, {score:2,    gemas:3}, {score:3,     gemas:5} ], // por niveles resueltos
   },
 
   /* ---------- RANGOS DE EXPLORADOR (5 niveles) ----------------

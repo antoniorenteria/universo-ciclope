@@ -66,6 +66,7 @@
     gate.classList.add('oculto');
     document.body.classList.remove('bloqueado');
     setTimeout(() => { gate.style.display='none'; }, 650);
+    setTimeout(autoPromptNotis, 1800);   // pide permiso de notis solo al entrar
   }
   if (gate) {
     document.body.classList.add('bloqueado');
@@ -137,29 +138,6 @@
       </div>`;
     }
 
-    // HOOK — para el que solo está viendo: acciones claras y llamativas
-    html += `<div class="h-sec pad"><h2>¿Qué quieres hacer?</h2></div>`;
-    html += `<div class="pad hook">
-      <div class="hook__card hook__card--play" data-ir="juegos">
-        <span class="hook__go">›</span>
-        <div class="hook__ico">🎮</div>
-        <div class="hook__t">Jugar ya</div>
-        <div class="hook__d">Sin registro. Gana gemas jugando.</div>
-      </div>
-      <div class="hook__card hook__card--exp" data-ir="expedicion">
-        <span class="hook__go">›</span>
-        <div class="hook__ico">🧭</div>
-        <div class="hook__t">Unirme a la expedición</div>
-        <div class="hook__d">Registra visitas, sube de rango, canjea premios.</div>
-      </div>
-      <div class="hook__card hook__card--wide" data-ir="archivo">
-        <div class="hook__ico">📖</div>
-        <div style="flex:1"><div class="hook__t" style="font-size:16px">Descubre la historia de Mirano</div>
-          <div class="hook__d">Planetas, criaturas y secretos por desbloquear.</div></div>
-        <span class="hook__go" style="position:static">›</span>
-      </div>
-    </div>`;
-
     // CONTINUAR (si ya jugó algo)
     const jugado = Object.keys(P.juegos || {});
     if (jugado.length) {
@@ -188,6 +166,29 @@
           </div>
         </div>`).join('') + `</div>`;
     }
+
+    // HOOK — acciones claras (debajo de novedades)
+    html += `<div class="h-sec pad"><h2>¿Qué quieres hacer?</h2></div>`;
+    html += `<div class="pad hook">
+      <div class="hook__card hook__card--play" data-ir="juegos">
+        <span class="hook__go">›</span>
+        <div class="hook__ico">🎮</div>
+        <div class="hook__t">Jugar</div>
+        <div class="hook__d">Sin registro. Diviértete y descubre los juegos.</div>
+      </div>
+      <div class="hook__card hook__card--exp" data-ir="expedicion">
+        <span class="hook__go">›</span>
+        <div class="hook__ico">🧭</div>
+        <div class="hook__t">Unirme a la expedición</div>
+        <div class="hook__d">Registra visitas, sube de rango, canjea premios.</div>
+      </div>
+      <div class="hook__card hook__card--wide" data-modal="ayuda">
+        <div class="hook__ico">❓</div>
+        <div style="flex:1"><div class="hook__t" style="font-size:16px">¿Cómo funciona?</div>
+          <div class="hook__d">Sellos, gemas y visitas — para qué sirve cada uno.</div></div>
+        <span class="hook__go" style="position:static">›</span>
+      </div>
+    </div>`;
 
     // MI BITÁCORA — aclara dónde vive la bitácora
     const pct = Estado.nave(P);
@@ -256,8 +257,9 @@
           ${st.completada
             ? `<span class="chip-ok">✓ Cumplida</span>`
             : `<div class="prog"><div class="prog__fill" style="width:${pctm}%"></div></div>
-               <span style="font-family:var(--panelfont);font-size:15px;color:var(--marfil)">${Math.min(st.avance,e.meta)}/${e.meta}</span>`}
-          ${e.enlace && !st.completada ? `<a class="btn btn--sm btn--ghost" href="${esc(e.enlace)}" target="_blank" rel="noopener">Ir</a>` : ''}
+               <span style="font-family:var(--body);font-weight:700;font-size:14px;color:var(--marfil)">${Math.min(st.avance,e.meta)}/${e.meta}</span>`}
+          ${!st.completada && e.id==='ojo-testigo' ? `<button class="btn btn--sm btn--ghost" data-modal="resena">Ir</button>`
+            : (e.enlace && !st.completada ? `<a class="btn btn--sm btn--ghost" href="${esc(e.enlace)}" target="_blank" rel="noopener">Ir</a>` : '')}
         </div>
       </div>`;
     });
@@ -370,7 +372,7 @@
         <div class="pass__stat"><b>${P.visitas.length}</b><span>Visitas</span></div>
       </div>
       <div class="pass__code">${esc(P.codigoRef)}</div>
-      <div class="pass__qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=0&data=${encodeURIComponent(P.codigoRef)}" alt="Código ${esc(P.codigoRef)}" loading="lazy"></div>
+      <div class="pass__qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data=${encodeURIComponent(location.href.split('#')[0].split('?')[0] + '?ref=' + P.codigoRef)}" alt="Escanéame" loading="lazy"></div>
     </div>
     <div class="ficha__edit" data-modal="apodo">${P.apodo?'✎ Cambiar mi nombre':'✎ Ponte un nombre de explorador'}</div>`;
 
@@ -457,15 +459,15 @@
     $('#player-frame').src = j.archivo;
     player.classList.add('abierto');
     document.body.classList.add('bloqueado');
-    Acciones.sumarGemasJuego(P, id, 4, null);
+    const r = Acciones.registrarPartida(P, id, null);
     P = Explorador.actual();
     $('#hdr-pts').textContent = P.gemas;
+    if (r.primera) setTimeout(() => toast(`¡Descubriste ${j.nombre}! +${r.gemas} gemas`), 400);
   }
   function cerrarJuego() {
     player.classList.remove('abierto');
     document.body.classList.remove('bloqueado');
     $('#player-frame').src = 'about:blank';
-    toast('Jugaste una partida · +gemas en tu bitácora');
     render(document.body.dataset.sec || 'inicio');
   }
   $('#player-x').addEventListener('click', cerrarJuego);
@@ -610,6 +612,20 @@
     }
   }
 
+  function modalAyuda() {
+    abrirModal(`
+      <div class="modal__ico">🧭</div>
+      <div class="modal__title">¿Cómo funciona?</div>
+      <div style="text-align:left;font-size:14px;line-height:1.5">
+        <p style="margin-bottom:12px"><b style="font-family:var(--display);color:var(--marfil)">📍 Visitas</b><br>Cada vez que vienes y registras el folio de tu ticket, sumas una <b>visita</b>.</p>
+        <p style="margin-bottom:12px"><b style="font-family:var(--display);color:var(--marfil)">🔖 Sellos</b><br>Las visitas te dan <b>sellos</b>. Los sellos <b>suben tu rango de explorador</b> (del 1 al 5) y reparan la nave de Mirano. <i>Solo se ganan visitando.</i></p>
+        <p style="margin-bottom:12px"><b style="font-family:var(--display);color:var(--marfil)">💎 Gemas</b><br>Son tu moneda. Se ganan al visitar y, poquito, por logros en los juegos. Sirven para <b>canjear recompensas</b> (papas, pociones, la Crepiburger...).</p>
+        <p style="margin-bottom:4px"><b style="font-family:var(--display);color:var(--marfil)">🏆 En resumen</b><br>Visita → ganas sellos y gemas → subes de rango y canjeas premios. Jugar es por diversión; las gemas de verdad vienen de venir.</p>
+      </div>
+      <button class="btn btn--solid btn--full" id="btn-ok" style="margin-top:18px">¡Entendido!</button>`);
+    $('#btn-ok').addEventListener('click', cerrarModal);
+  }
+
   /* ---------------- ONESIGNAL (push) ---------------- */
   function initOneSignal() {
     const appId = (CONTENIDO.notificaciones||{}).onesignalAppId;
@@ -642,6 +658,23 @@
       } catch(_) { toast('No se pudo activar. Revisa los permisos.'); }
     });
   }
+  /* Pide el permiso SOLO al entrar (una vez), sin que el usuario
+     tenga que ir a Perfil. El navegador igual exige tocar "Permitir". */
+  function autoPromptNotis() {
+    const appId = (CONTENIDO.notificaciones||{}).onesignalAppId;
+    if (!appId) return;
+    if (localStorage.getItem('uc_notis_ask') === '1') return;
+    localStorage.setItem('uc_notis_ask', '1');
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async (OneSignal) => {
+      try {
+        const perm = await OneSignal.Notifications.permission;
+        if (perm) return; // ya concedido
+        await OneSignal.Notifications.requestPermission();
+        if (OneSignal.Notifications.permission) { Acciones.activarNotis(P, true); P = Explorador.actual(); }
+      } catch(_) {}
+    });
+  }
 
   /* ---------------- DELEGACIÓN GLOBAL DE CLICKS ---------------- */
   app.addEventListener('click', e => {
@@ -669,6 +702,7 @@
       if (el.dataset.modal==='apodo')  return modalApodo();
       if (el.dataset.modal==='resena') return modalResena();
       if (el.dataset.modal==='notis')  return modalNotis();
+      if (el.dataset.modal==='ayuda')  return modalAyuda();
     }
     if (el.dataset.accion) {
       let a; try { a = JSON.parse(el.dataset.accion); } catch(_) { a = el.dataset.accion; }
@@ -681,6 +715,10 @@
   const inicial = (location.hash || '#inicio').replace('#','');
   ir(rutas.includes(inicial) ? inicial : 'inicio');
   initOneSignal();
+  // respaldo online: si hay endpoint, trae lo más reciente del servidor
+  if (window.Sync && Sync.activo()) {
+    Sync.reconciliar().then(np => { if (np) { P = np; render(document.body.dataset.sec || 'inicio'); } });
+  }
 
   /* PWA: service worker */
   if ('serviceWorker' in navigator) {
