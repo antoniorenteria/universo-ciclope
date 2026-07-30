@@ -161,7 +161,7 @@ const CONTENIDO = {
      esté vacío, el botón de activar queda oculto.
   ------------------------------------------------------------ */
   notificaciones: {
-    onesignalAppId: '',   // <-- pega aquí tu App ID de OneSignal
+    onesignalAppId: '19d69ae0-c5f7-4eba-871a-282d71b407e7',   // App ID de OneSignal (Web Push)
   },
 
   /* ---------- COMPARTE TU EXPERIENCIA ------------------------- */

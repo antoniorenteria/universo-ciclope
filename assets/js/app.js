@@ -609,9 +609,19 @@
     const s = document.createElement('script');
     s.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
     s.defer = true; document.head.appendChild(s);
+    // la app vive en un subpath en GitHub Pages (/universo-ciclope/):
+    // el service worker de OneSignal debe registrarse ahí, no en la raíz.
+    const base = location.pathname.replace(/[^/]*$/, '') || '/';   // '/universo-ciclope/'
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (OneSignal) => {
-      try { await OneSignal.init({ appId, allowLocalhostAsSecureOrigin:true }); } catch(_) {}
+      try {
+        await OneSignal.init({
+          appId,
+          serviceWorkerPath: base.replace(/^\//, '') + 'OneSignalSDKWorker.js',
+          serviceWorkerParam: { scope: base },
+          allowLocalhostAsSecureOrigin: true,
+        });
+      } catch(_) {}
     });
   }
   function pedirNotis() {
