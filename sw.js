@@ -7,7 +7,7 @@
      al instante y se guardan la primera vez.
    Sube VERSION al publicar para limpiar cachés viejos.
    ============================================================ */
-const VERSION = 'uc-v5';
+const VERSION = 'uc-v6';
 const SHELL = [
   './',
   './index.html',

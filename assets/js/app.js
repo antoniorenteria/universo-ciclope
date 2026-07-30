@@ -472,6 +472,20 @@
   }
   $('#player-x').addEventListener('click', cerrarJuego);
 
+  /* Recibe el puntaje de los juegos (iframe del mismo sitio) y
+     otorga gemas por LOGROS (con tope diario, sin farmeo). */
+  window.addEventListener('message', e => {
+    if (e.origin !== location.origin) return;
+    const d = e.data;
+    if (!d || d.tipo !== 'uc-score' || !d.juego) return;
+    const dadas = Acciones.otorgarLogros(P, d.juego, +d.score || 0);
+    if (dadas > 0) {
+      P = Explorador.actual();
+      $('#hdr-pts').textContent = P.gemas;
+      toast(`¡Logro! +${dadas} gemas`);
+    }
+  });
+
   /* ---------------- MODALES ---------------- */
   const modal = $('#modal');
   function abrirModal(html) {

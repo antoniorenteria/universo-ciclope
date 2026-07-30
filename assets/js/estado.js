@@ -248,7 +248,7 @@ const Acciones = {
    (como hasta ahora), sin romperse.
    Código del servidor: /backend/Code.gs  ·  guía en LEEME.md
   ============================================================ */
-const ENDPOINT = ''; // <-- pega aquí la URL /exec de tu Apps Script
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwK_fBVUVF-PpQTblUGQciOdCOFk1d0Cuc4YUo4UEtJZL16wAYdlnrj8DMWpI3JDYGv/exec'; // Apps Script Web App
 
 const Sync = {
   activo() { return !!ENDPOINT; },

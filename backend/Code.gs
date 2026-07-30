@@ -38,8 +38,24 @@ function handle(e, data) {
   return json({ ok: false, msg: 'accion desconocida' });
 }
 
-function sheet() {
+/* Obtiene la hoja de cálculo de forma robusta:
+   1) si ya guardamos su ID, la abre;
+   2) si el script está ligado a una hoja, la usa y recuerda su ID;
+   3) si no, crea una hoja nueva ("Universo Cíclope - DB") en tu
+      Drive y recuerda su ID. Así funciona siempre, sea script
+      ligado o independiente. */
+function getSS() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('SS_ID');
+  if (id) { try { return SpreadsheetApp.openById(id); } catch (_) {} }
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) ss = SpreadsheetApp.create('Universo Cíclope - DB');
+  props.setProperty('SS_ID', ss.getId());
+  return ss;
+}
+
+function sheet() {
+  var ss = getSS();
   var sh = ss.getSheetByName(HOJA);
   if (!sh) {
     sh = ss.insertSheet(HOJA);

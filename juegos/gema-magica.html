@@ -1351,5 +1351,17 @@ function paintBest(){
 paintBest();
 $('btnAgain').addEventListener('click',paintBest);
 </script>
+<script>
+/* Universo Cíclope · reporta el score para logros de gemas */
+(function(){
+  if (parent === window) return;
+  function report(s){ try{ parent.postMessage({tipo:'uc-score',juego:'gema',score:s},'*'); }catch(_){} }
+  var maxS = 0;
+  setInterval(function(){
+    var el = document.getElementById('score');
+    if (el){ var s = parseInt(el.textContent,10)||0; if (s > maxS){ maxS = s; report(s); } }
+  }, 1500);
+})();
+</script>
 </body>
 </html>

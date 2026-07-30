@@ -1773,6 +1773,24 @@ window.addEventListener('resize', ()=>{ if (nivel){ medir(); aplicar(); } });
 /* ---------- arranque ---------- */
 pintarMenu();
 </script>
+<script>
+/* Universo Cíclope · reporta niveles completados para logros de gemas */
+(function(){
+  if (parent === window) return;
+  var ganados = 0, was = false;
+  function report(){ try{ parent.postMessage({tipo:'uc-score',juego:'ojo',score:ganados},'*'); }catch(_){} }
+  function watch(){
+    var vic = document.getElementById('v-victoria');
+    if (!vic){ setTimeout(watch, 800); return; }
+    new MutationObserver(function(){
+      var on = vic.classList.contains('activa');
+      if (on && !was){ ganados++; report(); }
+      was = on;
+    }).observe(vic, {attributes:true, attributeFilter:['class']});
+  }
+  watch();
+})();
+</script>
 </body>
 </html>
 
