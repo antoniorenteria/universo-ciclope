@@ -3,7 +3,7 @@
    Cache "app shell" para carga inmediata y uso con conexión
    limitada. Sube el número de versión al publicar cambios.
    ============================================================ */
-const VERSION = 'uc-v3';
+const VERSION = 'uc-v4';
 const SHELL = [
   './',
   './index.html',

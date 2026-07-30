@@ -36,12 +36,17 @@ const CONTENIDO = {
     { img:'assets/img/nov/dedos.jpg',     tag:'MENÚ',      titulo:'Dedos de la casa',              accion:'recompensas' },
   ],
 
-  /* ---------- PROMOCIONES (descubrimientos, no descuentos) ---- */
+  /* ---------- DESCUBRIMIENTOS (con acción concreta) ----------
+     Cada uno lleva a una acción real, no solo informa.
+     accion: 'expedicion'|'juegos'|'archivo'|'recompensas'|'resena'|'registrar'
+  ------------------------------------------------------------ */
   promos: [
     { activo:true, ico:'🌙', titulo:'Noches de expedición',
-      texto:'Martes a jueves cada visita cuenta doble en tu bitácora.' },
+      texto:'Martes a jueves cada visita cuenta doble en tu bitácora.',
+      accion:'registrar', cta:'Registrar visita' },
     { activo:true, ico:'⭐', titulo:'El Ojo Testigo',
-      texto:'Deja tu testimonio en el mapa estelar y gana 30 gemas.' },
+      texto:'Deja tu reseña en Google y gana 30 gemas.',
+      accion:'resena', cta:'Dejar reseña' },
   ],
 
   /* ---------- ARCHIVO CÍCLOPE (la wiki desbloqueable) ---------
@@ -178,12 +183,20 @@ const CONTENIDO = {
     mensaje: 'Hola Mirano, quiero unirme al Universo Cíclope 🔭',
   },
 
-  /* ---------- BASES ------------------------------------------- */
+  /* ---------- BASES -------------------------------------------
+     'resena' = enlace DIRECTO para escribir reseña de ESA sucursal
+     (así el usuario solo pone estrellas, sin buscar ni escribir).
+     Sácalo del panel de Google Business de cada local:
+     "Pedir reseñas" -> copia el link corto tipo g.page/r/XXXX/review
+     Si lo dejas vacío, usa 'maps' como respaldo.
+  ------------------------------------------------------------ */
   bases: [
     { nombre:'Revolución', zona:'Pachuca de Soto',
-      maps:'https://maps.google.com/?q=El+Anillo+del+Ciclope+Revolucion' },
+      maps:'https://maps.google.com/?q=El+Anillo+del+Ciclope+Revolucion',
+      resena:'' },   // <-- pega aquí el link de reseña de Revolución
     { nombre:'Tulipanes', zona:'Mineral de la Reforma',
-      maps:'https://maps.google.com/?q=El+Anillo+del+Ciclope+Tulipanes' },
+      maps:'https://maps.google.com/?q=El+Anillo+del+Ciclope+Tulipanes',
+      resena:'' },   // <-- pega aquí el link de reseña de Tulipanes
   ],
 };
 

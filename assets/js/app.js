@@ -199,21 +199,23 @@
         <span class="btn btn--sm btn--ghost">Abrir</span>
       </div></div>`;
 
-    // PROMOS
+    // DESCUBRIMIENTOS (cada uno con acción concreta)
     const promos = (C.promos||[]).filter(p => p.activo);
     if (promos.length) {
       html += `<div class="h-sec pad"><h2>Descubrimientos</h2></div><div class="pad">`;
-      html += promos.map(p => `<div class="card listrow" style="margin-bottom:12px">
+      html += promos.map(p => `<div class="card listrow" data-promo="${esc(p.accion||'')}" style="margin-bottom:12px;cursor:pointer">
         <div class="listrow__l"><span class="listrow__ico">${esc(p.ico)}</span>
-          <div><b>${esc(p.titulo)}</b><small>${esc(p.texto)}</small></div></div></div>`).join('');
+          <div><b>${esc(p.titulo)}</b><small>${esc(p.texto)}</small></div></div>
+        ${p.cta ? `<span class="btn btn--sm btn--ghost">${esc(p.cta)}</span>` : `<span style="opacity:.6">›</span>`}</div>`).join('');
       html += `</div>`;
     }
 
-    // COMPARTIR
-    html += `<div class="pad" style="margin-top:20px"><div class="card listrow" data-modal="resena" style="cursor:pointer">
+    // COMPARTE — sección aparte, separada de Descubrimientos
+    html += `<div class="h-sec pad"><h2>Comparte</h2><span>Reseña</span></div>
+      <div class="pad"><div class="card listrow" data-modal="resena" style="cursor:pointer">
         <div class="listrow__l"><span class="listrow__ico">⭐</span>
-          <div><b>Cuenta tu expedición</b><small>${esc(C.compartir.pregunta)}</small></div></div>
-        <span class="btn btn--sm btn--ghost">Calificar</span>
+          <div><b>Cuenta tu expedición</b><small>Califícanos y ayúdanos a crecer</small></div></div>
+        <span class="btn btn--sm btn--solid">Calificar</span>
       </div></div>`;
 
     html += `<p class="foot">UNIVERSO CÍCLOPE · EL ANILLO DEL CÍCLOPE®</p>`;
@@ -367,8 +369,8 @@
         <div class="pass__stat"><b>${P.gemas}</b><span>Gemas</span></div>
         <div class="pass__stat"><b>${P.visitas.length}</b><span>Visitas</span></div>
       </div>
-      <div class="pass__strip">${Array.from({length:16}).map(()=>'<i></i>').join('')}</div>
       <div class="pass__code">${esc(P.codigoRef)}</div>
+      <div class="pass__qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=0&data=${encodeURIComponent(P.codigoRef)}" alt="Código ${esc(P.codigoRef)}" loading="lazy"></div>
     </div>
     <div class="ficha__edit" data-modal="apodo">${P.apodo?'✎ Cambiar mi nombre':'✎ Ponte un nombre de explorador'}</div>`;
 
@@ -556,14 +558,20 @@
       <p class="modal__text">Toca las estrellas.</p>
       <div class="stars-rate" id="rate">${[1,2,3,4,5].map(n=>`<span data-n="${n}">★</span>`).join('')}</div>
       <div id="rate-out"></div>`);
-    let val = 0;
     $$('#rate span').forEach(s => {
       s.addEventListener('click', () => {
-        val = +s.dataset.n;
+        const val = +s.dataset.n;
         $$('#rate span').forEach(x => x.classList.toggle('on', +x.dataset.n <= val));
         if (val >= 4) {
+          // 4-5 estrellas -> elige sucursal -> link DIRECTO a reseña de esa base
+          const botones = REGLAS.sucursales.map(su => {
+            const b = (CONTENIDO.bases||[]).find(x => x.nombre === su.nombre) || {};
+            const link = b.resena || C.enlaceGoogle || b.maps || '#';
+            return `<a class="btn btn--solid btn--full" href="${esc(link)}" target="_blank" rel="noopener">📍 Sucursal ${esc(su.nombre)}</a>`;
+          }).join('');
           $('#rate-out').innerHTML = `<p class="modal__mirano">“El universo se va a enterar. Gracias.”</p>
-            <a class="btn btn--solid btn--full" href="${esc(C.enlaceGoogle)}" target="_blank" rel="noopener">Dejar mi reseña en Google</a>`;
+            <p class="modal__text" style="margin-bottom:12px">¿En qué base nos visitaste?</p>
+            <div class="modal__branches">${botones}</div>`;
         } else {
           $('#rate-out').innerHTML = `<p class="modal__text">Cuéntanos qué mejorar. Mirano lee todo.</p>
             <a class="btn btn--ghost btn--full" href="https://wa.me/${esc(CONTENIDO.whatsapp.numero)}?text=${encodeURIComponent('Quiero darles una sugerencia sobre mi visita')}" target="_blank" rel="noopener">Escribir a Mirano</a>`;
@@ -637,8 +645,15 @@
 
   /* ---------------- DELEGACIÓN GLOBAL DE CLICKS ---------------- */
   app.addEventListener('click', e => {
-    const el = e.target.closest('[data-ir],[data-juego],[data-modal],[data-cobrar],[data-arch],[data-accion],[data-copiar],[data-reset]');
+    const el = e.target.closest('[data-ir],[data-juego],[data-modal],[data-cobrar],[data-arch],[data-accion],[data-promo],[data-copiar],[data-reset]');
     if (!el) return;
+    if (el.dataset.promo !== undefined) {
+      const a = el.dataset.promo;
+      if (a === 'registrar') return modalSellar();
+      if (a === 'resena')    return modalResena();
+      if (a)                 return ir(a);
+      return;
+    }
     if (el.dataset.ir)      return ir(el.dataset.ir);
     if (el.dataset.juego)   return abrirJuego(el.dataset.juego);
     if (el.dataset.cobrar)  return modalCobrar(el.dataset.cobrar);
