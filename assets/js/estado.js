@@ -269,6 +269,17 @@ const Sync = {
     }, 1200);
   },
 
+  /* Lee la configuración de contenido editada desde el panel de
+     admin (hero, novedades, promos, misiones activas). */
+  async config() {
+    if (!this.activo()) return null;
+    try {
+      const r = await fetch(`${ENDPOINT}?accion=config`);
+      const j = await r.json();
+      return (j && j.ok) ? j.config : null;
+    } catch (_) { return null; }
+  },
+
   /* Baja el perfil del servidor al cargar. Devuelve el perfil
      remoto o null. */
   async bajar(id) {

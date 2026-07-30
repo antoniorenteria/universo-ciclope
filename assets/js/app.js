@@ -726,11 +726,27 @@
   });
 
   /* ---------------- ARRANQUE ---------------- */
+  /* Aplica la configuración editada desde el panel de admin sobre
+     el contenido por defecto. Solo toca lo que el panel definió. */
+  function aplicarConfig(cfg) {
+    if (!cfg || typeof cfg !== 'object') return false;
+    let cambio = false;
+    if (cfg.hero && typeof cfg.hero === 'object') { CONTENIDO.hero = Object.assign({}, CONTENIDO.hero, cfg.hero); cambio = true; }
+    if (Array.isArray(cfg.novedades) && cfg.novedades.length) { CONTENIDO.novedades = cfg.novedades; cambio = true; }
+    if (Array.isArray(cfg.promos)) { CONTENIDO.promos = cfg.promos; cambio = true; }
+    if (Array.isArray(cfg.misionesActivas)) {
+      REGLAS.encomiendas.forEach(e => { e.activa = cfg.misionesActivas.includes(e.id); });
+      cambio = true;
+    }
+    return cambio;
+  }
+
   const inicial = (location.hash || '#inicio').replace('#','');
   ir(rutas.includes(inicial) ? inicial : 'inicio');
   initOneSignal();
-  // respaldo online: si hay endpoint, trae lo más reciente del servidor
+  // online: trae contenido editado (panel) y el progreso más reciente
   if (window.Sync && Sync.activo()) {
+    Sync.config().then(cfg => { if (aplicarConfig(cfg)) render(document.body.dataset.sec || 'inicio'); });
     Sync.reconciliar().then(np => { if (np) { P = np; render(document.body.dataset.sec || 'inicio'); } });
   }
 

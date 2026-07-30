@@ -22,6 +22,11 @@
    ============================================================ */
 
 const HOJA = 'Exploradores';
+const HOJA_CFG = 'Config';
+
+/* CLAVE DE ADMIN — cámbiala por una tuya. Es la contraseña del
+   panel de administración. No la compartas. */
+const ADMIN_KEY = 'ciclope-2026';
 
 function doGet(e)  { return handle(e, e.parameter || {}); }
 function doPost(e) {
@@ -32,10 +37,23 @@ function doPost(e) {
 
 function handle(e, data) {
   var accion = data.accion || (e.parameter && e.parameter.accion);
+  var key = data.key || (e.parameter && e.parameter.key);
+  // --- públicas (las usa la app) ---
   if (accion === 'guardar') return json(guardar(data.perfil));
   if (accion === 'cargar')  return json(cargar(data.id || (e.parameter && e.parameter.id)));
+  if (accion === 'config')  return json({ ok: true, config: configLeer() }); // la app lee el contenido
   if (accion === 'folio')   return json({ ok: true }); // fase 2: validar contra Loyverse
+  // --- de admin (requieren clave) ---
+  if (accion === 'login')         return json({ ok: key === ADMIN_KEY });
+  if (accion === 'stats')         return json(admin(key, stats));
+  if (accion === 'lista')         return json(admin(key, lista));
+  if (accion === 'configGuardar') return json(admin(key, function () { return configGuardar(data.config); }));
   return json({ ok: false, msg: 'accion desconocida' });
+}
+
+function admin(key, fn) {
+  if (key !== ADMIN_KEY) return { ok: false, msg: 'clave incorrecta' };
+  return fn();
 }
 
 /* Obtiene la hoja de cálculo de forma robusta:
@@ -96,6 +114,71 @@ function cargar(id) {
   var blob = sh.getRange(row, 9).getValue();
   try { return { ok: true, perfil: JSON.parse(blob) }; }
   catch (_) { return { ok: true, perfil: null }; }
+}
+
+/* ---------- PANEL DE ADMINISTRACIÓN ---------- */
+
+// Lee todas las filas de Exploradores como objetos.
+function leerTodo() {
+  var sh = sheet();
+  var n = Math.max(sh.getLastRow() - 1, 0);
+  if (!n) return [];
+  var vals = sh.getRange(2, 1, n, 9).getValues();
+  return vals.map(function (r) {
+    var blob = {};
+    try { blob = JSON.parse(r[8]) || {}; } catch (_) {}
+    return {
+      id: r[0], apodo: r[1], sellos: +r[2] || 0, gemas: +r[3] || 0,
+      visitas: +r[4] || 0, rango: +r[5] || 1,
+      actualizado: r[7] ? new Date(r[7]).getTime() : 0,
+      canjes: blob.canjes || [], alta: blob.alta || ''
+    };
+  });
+}
+
+function stats() {
+  var all = leerTodo();
+  var ahora = Date.now(), d7 = 7 * 864e5, d30 = 30 * 864e5;
+  var s = {
+    total: all.length, activos7: 0, activos30: 0,
+    visitas: 0, gemas: 0, sellos: 0, canjes: 0,
+    rangos: [0, 0, 0, 0, 0], nombres: ['Explorador', 'Rastreador', 'Cazador', 'Guardián', 'Embajador']
+  };
+  var canjesRecientes = [];
+  all.forEach(function (e) {
+    if (ahora - e.actualizado < d7) s.activos7++;
+    if (ahora - e.actualizado < d30) s.activos30++;
+    s.visitas += e.visitas; s.gemas += e.gemas; s.sellos += e.sellos;
+    s.rangos[Math.min(Math.max(e.rango, 1), 5) - 1]++;
+    (e.canjes || []).forEach(function (c) {
+      s.canjes++;
+      canjesRecientes.push({ apodo: e.apodo || 'Explorador', nombre: c.nombre, codigo: c.codigo, fecha: c.fecha });
+    });
+  });
+  canjesRecientes.sort(function (a, b) { return (b.fecha || '').localeCompare(a.fecha || ''); });
+  s.canjesRecientes = canjesRecientes.slice(0, 25);
+  return { ok: true, stats: s };
+}
+
+function lista() {
+  var all = leerTodo().sort(function (a, b) { return b.actualizado - a.actualizado; });
+  return { ok: true, exploradores: all.slice(0, 500) };
+}
+
+/* ---------- CONFIG editable (contenido de la app) ---------- */
+function cfgSheet() {
+  var ss = getSS();
+  var sh = ss.getSheetByName(HOJA_CFG);
+  if (!sh) { sh = ss.insertSheet(HOJA_CFG); sh.getRange(1, 1).setValue('{}'); }
+  return sh;
+}
+function configLeer() {
+  try { return JSON.parse(cfgSheet().getRange(1, 1).getValue() || '{}'); }
+  catch (_) { return {}; }
+}
+function configGuardar(cfg) {
+  cfgSheet().getRange(1, 1).setValue(JSON.stringify(cfg || {}));
+  return { ok: true };
 }
 
 function json(o) {
