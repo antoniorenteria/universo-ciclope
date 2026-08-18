@@ -241,17 +241,43 @@ const Acciones = {
     return true;
   },
 
+  /* Completa una misión MANUAL (las que no se validan solas, como
+     dejar reseña). Paga el premio una vez. */
+  completarMision(p, id) {
+    const e = REGLAS.encomiendas.find(x => x.id === id);
+    const st = p.encomiendas[id];
+    if (!e || !st || st.completada) return p;
+    st.avance = e.meta; st.completada = true; p.gemas += (e.premio || 0);
+    Explorador.guardar(p);
+    return p;
+  },
+
+  /* Recalcula el avance de cada misión AUTOMÁTICA desde el historial
+     real de visitas (así siempre refleja la verdad). */
   _avanzarMisiones(p, evento) {
+    const ahora = Date.now();
+    const dia = v => new Date(v.fecha).getDay();
     REGLAS.encomiendas.forEach(e => {
-      if (!e.activa) return;
+      if (!e.activa || !e.auto) return;         // las manuales no se tocan aquí
       const st = p.encomiendas[e.id];
       if (st.completada) return;
-      let cuenta = false;
-      if (e.id === 'primer-contacto' && evento.tipo === 'visita') cuenta = true;
-      if (e.id === 'cazador-nocturno' && evento.tipo === 'visita' && e.dias && e.dias.includes(evento.dia)) cuenta = true;
-      if (e.id === 'racha' && evento.tipo === 'visita') cuenta = true;
-      if (cuenta) {
-        st.avance = Math.min(e.meta, st.avance + 1);
+      let avance = st.avance;
+      if (e.id === 'primer-contacto') {
+        avance = p.visitas.length >= 1 ? 1 : 0;
+      } else if (e.id === 'cazador-nocturno') {
+        avance = p.visitas.filter(v => (e.dias || []).includes(dia(v))).length;
+      } else if (e.id === 'racha') {
+        const win = (e.ventanaDias || 30) * 864e5;
+        avance = p.visitas.filter(v => (ahora - new Date(v.fecha).getTime()) <= win).length;
+      } else if (e.id === 'peregrino') {
+        avance = new Set(p.visitas.map(v => (v.base || '').trim()).filter(Boolean)).size;
+      } else if (e.id === 'catador') {
+        return; // requiere Loyverse (saber qué brebajes pidió) -> fase 2
+      } else if (evento.tipo === 'visita') {
+        avance = st.avance + 1; // misiones auto genéricas: cuentan visitas
+      }
+      {
+        st.avance = Math.min(e.meta, avance);
         if (st.avance >= e.meta) { st.completada = true; p.gemas += (e.premio || 0); }
       }
     });

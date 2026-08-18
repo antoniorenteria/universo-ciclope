@@ -624,6 +624,14 @@
           $('#rate-out').innerHTML = `<p class="modal__mirano">“El universo se va a enterar. Gracias.”</p>
             <p class="modal__text" style="margin-bottom:12px">¿En qué base nos visitaste?</p>
             <div class="modal__branches">${botones}</div>`;
+          // al ir a dejar reseña, se completa la misión "El Ojo Testigo"
+          $$('#rate-out .modal__branches a').forEach(a => a.addEventListener('click', () => {
+            const st = P.encomiendas['ojo-testigo'];
+            if (st && !st.completada) {
+              Acciones.completarMision(P, 'ojo-testigo'); P = Explorador.actual();
+              $('#hdr-pts').textContent = P.gemas; toast('¡Misión El Ojo Testigo cumplida! +30 gemas');
+            }
+          }));
         } else {
           $('#rate-out').innerHTML = `<p class="modal__text">Cuéntanos qué mejorar. Mirano lee todo.</p>
             <a class="btn btn--ghost btn--full" href="https://wa.me/${esc(CONTENIDO.whatsapp.numero)}?text=${encodeURIComponent('Quiero darles una sugerencia sobre mi visita')}" target="_blank" rel="noopener">Escribir a Mirano</a>`;
