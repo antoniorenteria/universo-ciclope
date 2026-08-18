@@ -66,7 +66,7 @@
     gate.classList.add('oculto');
     document.body.classList.remove('bloqueado');
     setTimeout(() => { gate.style.display='none'; }, 650);
-    setTimeout(autoPromptNotis, 1800);   // pide permiso de notis solo al entrar
+    setTimeout(mostrarOnboard, 500);     // pop-up de bienvenida / agregar a inicio
   }
   if (gate) {
     document.body.classList.add('bloqueado');
@@ -75,6 +75,42 @@
   }
   $('#gate-mute') && $('#gate-mute').addEventListener('click', e => { e.stopPropagation(); toggleMute(); });
   $('#music-toggle') && $('#music-toggle').addEventListener('click', toggleMute);
+
+  /* ---------------- ONBOARDING / AGREGAR A INICIO ---------------- */
+  let deferredPrompt = null, iosPaso = false;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
+  const enStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const onboard = $('#onboard');
+
+  function mostrarOnboard() {
+    if (!onboard || enStandalone || localStorage.getItem('uc_onboard') === '1') { autoPromptNotis(); return; }
+    onboard.hidden = false;
+    document.body.classList.add('bloqueado');
+  }
+  function cerrarOnboard() {
+    if (onboard) onboard.hidden = true;
+    document.body.classList.remove('bloqueado');
+    localStorage.setItem('uc_onboard', '1');
+    setTimeout(autoPromptNotis, 400);
+  }
+  if (onboard) {
+    $('#ob-close').addEventListener('click', cerrarOnboard);
+    $('#ob-install').addEventListener('click', async () => {
+      if (iosPaso) return cerrarOnboard();
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        try { await deferredPrompt.userChoice; } catch(_){}
+        deferredPrompt = null; cerrarOnboard();
+      } else if (esIOS) {
+        $('#ob-body').innerHTML = `<div class="onboard__ios">Para agregarla a tu pantalla de inicio en iPhone:<br><br>
+          1. Toca el botón <b>Compartir</b> ⬆️ (abajo en Safari).<br>
+          2. Elige <b>“Agregar a inicio”</b>.<br>
+          3. Toca <b>Agregar</b>. ¡Listo!</div>`;
+        $('#ob-install').textContent = 'Entendido'; iosPaso = true;
+      } else { cerrarOnboard(); }
+    });
+  }
 
   /* ---------------- TOAST ---------------- */
   let toastT;

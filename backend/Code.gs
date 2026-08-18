@@ -49,6 +49,7 @@ function handle(e, data) {
   if (accion === 'stats')         return json(admin(key, stats));
   if (accion === 'lista')         return json(admin(key, lista));
   if (accion === 'configGuardar') return json(admin(key, function () { return configGuardar(data.config); }));
+  if (accion === 'subirImagen')   return json(admin(key, function () { return subirImagen(data.nombre, data.data, data.mime); }));
   return json({ ok: false, msg: 'accion desconocida' });
 }
 
@@ -219,6 +220,28 @@ function configLeer() {
 function configGuardar(cfg) {
   cfgSheet().getRange(1, 1).setValue(JSON.stringify(cfg || {}));
   return { ok: true };
+}
+
+/* ---------- SUBIR FOTOS (a Drive, públicas) ----------
+   Guarda la imagen en una carpeta de tu Drive y devuelve una URL
+   pública lista para usar en la app. */
+function imgFolder() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('IMG_FOLDER');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (_) {} }
+  var f = DriveApp.createFolder('Universo Cíclope - Imágenes');
+  props.setProperty('IMG_FOLDER', f.getId());
+  return f;
+}
+function subirImagen(nombre, dataB64, mime) {
+  if (!dataB64) return { ok: false, msg: 'sin datos' };
+  try {
+    var blob = Utilities.newBlob(Utilities.base64Decode(dataB64), mime || 'image/jpeg', nombre || ('img-' + Date.now() + '.jpg'));
+    var file = imgFolder().createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var id = file.getId();
+    return { ok: true, url: 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1200', id: id };
+  } catch (e) { return { ok: false, msg: String(e) }; }
 }
 
 function json(o) {

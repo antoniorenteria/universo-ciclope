@@ -83,6 +83,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
 /* content editor */
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12.5px;color:var(--tenue);margin-bottom:5px;font-weight:600}
+.upwrap{display:flex;gap:8px;align-items:center}
+.upwrap input{flex:1}
+.upbtn{flex:0 0 auto;cursor:pointer;background:#241a34;border:1px solid var(--linea);border-radius:10px;padding:10px 12px;font-size:16px;white-space:nowrap}
+.upbtn:hover{border-color:var(--amarillo)}
+.upprev{width:46px;height:46px;object-fit:cover;border-radius:8px;border:1px solid var(--linea)}
+.uploading{opacity:.55;pointer-events:none}
 .row-item{background:var(--fondo2);border:1px solid var(--linea);border-radius:10px;padding:12px;margin-bottom:10px;position:relative}
 .row-item .x{position:absolute;top:8px;right:10px;cursor:pointer;color:var(--tenue);font-size:18px}
 .mini{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -148,7 +154,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="field"><label>Texto</label><textarea id="h-texto" rows="2"></textarea></div>
         <div class="mini">
           <div class="field"><label>Acción (a dónde lleva)</label><select id="h-accion"><option value="expedicion">Expedición</option><option value="juegos">Juegos</option><option value="archivo">Archivo</option><option value="recompensas">Recompensas</option></select></div>
-          <div class="field"><label>Imagen de fondo (ruta o URL)</label><input id="h-bg" placeholder="assets/img/lore/magmafera.jpg"></div>
+          <div class="field"><label>Imagen de fondo</label>
+            <div class="upwrap"><input id="h-bg" placeholder="URL, o sube una foto →">
+              <label class="upbtn">📤 Subir<input type="file" accept="image/*" hidden data-upfor="h-bg"></label></div></div>
         </div>
       </div>
 
@@ -294,8 +302,10 @@ function renderNovs(list){
 }
 function rowNov(n,i){
   return `<div class="row-item" data-nov><span class="x" data-del>✕</span>
-    <div class="mini"><div class="field"><label>Imagen (ruta/URL)</label><input data-f="img" value="${esc(n.img||'')}" placeholder="assets/img/nov/cerebros.jpg"></div>
-    <div class="field"><label>Etiqueta</label><input data-f="tag" value="${esc(n.tag||'')}" placeholder="MENÚ"></div></div>
+    <div class="field"><label>Imagen</label>
+      <div class="upwrap"><input data-f="img" value="${esc(n.img||'')}" placeholder="URL, o sube una foto →">
+        <label class="upbtn">📤 Subir<input type="file" accept="image/*" hidden data-upfield></label></div></div>
+    <div class="field"><label>Etiqueta</label><input data-f="tag" value="${esc(n.tag||'')}" placeholder="MENÚ"></div>
     <div class="mini"><div class="field"><label>Título</label><input data-f="titulo" value="${esc(n.titulo||'')}"></div>
     <div class="field"><label>Acción</label><select data-f="accion">${opts(['archivo','juegos','recompensas','expedicion'],n.accion)}</select></div></div></div>`;
 }
@@ -325,6 +335,34 @@ function recolectar(){
   return { hero, novedades, promos, misionesActivas };
 }
 const val = (r,f)=> r.querySelector(`[data-f="${f}"]`).value.trim();
+
+/* ---- SUBIR FOTOS (redimensiona y sube al Drive vía backend) ---- */
+function resizeImg(file, max, q){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{ const s=Math.min(1, max/Math.max(img.width,img.height)); const c=document.createElement('canvas');
+      c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      res(c.toDataURL('image/jpeg', q)); };
+    img.onerror=rej; img.src=URL.createObjectURL(file);
+  });
+}
+document.addEventListener('change', async e=>{
+  const inp=e.target;
+  if (inp.type!=='file' || !inp.files || !inp.files[0]) return;
+  if (!inp.matches('[data-upfor],[data-upfield]')) return;
+  const target = inp.dataset.upfor ? document.getElementById(inp.dataset.upfor)
+    : inp.closest('.field').querySelector('[data-f="img"]');
+  const btn = inp.closest('.upbtn'); const txt = btn.childNodes[0];
+  btn.classList.add('uploading'); txt.nodeValue='Subiendo…';
+  try{
+    const dataUrl = await resizeImg(inp.files[0], 1400, 0.72);
+    const j = await apiPost({ accion:'subirImagen', nombre:inp.files[0].name, data:dataUrl.split(',')[1], mime:'image/jpeg' });
+    if (j && j.ok){ target.value = j.url; }
+    else alert('No se pudo subir la foto: ' + ((j&&j.msg)||'error'));
+  }catch(err){ alert('Error al subir la imagen.'); }
+  finally{ btn.classList.remove('uploading'); txt.nodeValue='📤 Subir'; inp.value=''; }
+});
 
 $('#btn-guardar').addEventListener('click', async ()=>{
   $('#save-ok').classList.add('hidden'); $('#save-err').textContent='';
