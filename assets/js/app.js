@@ -809,12 +809,23 @@
     if (cod) history.replaceState(null, '', location.pathname + location.hash);
   })();
 
+  // aplica el último contenido guardado localmente ANTES de pintar
+  // (evita el parpadeo del hero viejo mientras llega el del servidor)
+  try { const c = JSON.parse(localStorage.getItem('uc_config') || 'null'); if (c) aplicarConfig(c); } catch(_) {}
+
   const inicial = (location.hash || '#inicio').replace('#','');
   ir(rutas.includes(inicial) ? inicial : 'inicio');
   initOneSignal();
   // online: trae contenido editado (panel) y el progreso más reciente
   if (window.Sync && Sync.activo()) {
-    Sync.config().then(cfg => { if (aplicarConfig(cfg)) render(document.body.dataset.sec || 'inicio'); });
+    Sync.config().then(cfg => {
+      if (!cfg) return;
+      const s = JSON.stringify(cfg);
+      if (s !== localStorage.getItem('uc_config')) {   // solo re-pinta si de verdad cambió
+        localStorage.setItem('uc_config', s);
+        if (aplicarConfig(cfg)) render(document.body.dataset.sec || 'inicio');
+      }
+    });
     Sync.reconciliar().then(np => { if (np) { P = np; render(document.body.dataset.sec || 'inicio'); } });
   }
 
