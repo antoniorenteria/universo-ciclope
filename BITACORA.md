@@ -59,6 +59,7 @@ universo-ciclope/
 ├── sw.js                 Service worker (network-first; subir VERSION al publicar)
 ├── CNAME                 dominio: universo.elanillodelciclope.com
 ├── BITACORA.md           ESTE ARCHIVO
+├── NOTIFICACIONES.md     Textos de notificaciones (bienvenida + plantillas) en español
 ├── LEEME.md              Manual para Toño
 ├── assets/
 │   ├── css/universo.css  Diseño (tokens de marca)
@@ -108,19 +109,22 @@ Backend = Google Apps Script + Sheets (mismo patrón que El Ojo Maestro).
 
 ## ⏳ QUÉ FALTA / PRÓXIMOS PASOS
 
+- [x] ~~Textos en español para OneSignal~~ → hechos en `NOTIFICACIONES.md`.
+      **FALTA que Toño los pegue en OneSignal** (Welcome Notification + Slide Prompt).
 - [ ] **Datos reales en `contenido.js`:** número de WhatsApp real (`whatsapp.numero`).
 - [ ] **Catador de Pociones:** requiere Loyverse (saber qué brebajes pidió). Dejar
       apagada en el panel hasta conectar Loyverse.
 - [ ] **Conectar Loyverse** (fase 2): validar folios reales (existe, de hoy/ayer,
       monto ≥ mínimo, no reclamado) en `Code.gs` acción `folio`, y encender Catador/Peregrino auto.
-- [ ] **Textos en español para OneSignal** (bienvenida + 3-4 notificaciones tipo).
 - [ ] **Responsive** para tablet/desktop (hoy es mobile-first, columna centrada).
 - [ ] **Costo real de la Poción** (único premio sin costo verificado en reglas.js).
 - [ ] **Wallet nativo** (Apple/Google Wallet) — fase 3, opcional (requiere certificado Apple).
 - [ ] Integrar métricas del panel al **Ojo Maestro** (mismo ecosistema).
 
-> **PRÓXIMO PASO INMEDIATO:** (definido al cierre de cada sesión — ver la memoria
-> local `universo-ciclope-app.md` para el último "PRÓXIMO PASO" exacto.)
+> **PRÓXIMO PASO INMEDIATO (al 2026-07-30):** Toño pega en OneSignal la bienvenida
+> y el slide prompt de `NOTIFICACIONES.md` (para quitar el inglés) y pone su número
+> real de WhatsApp en `contenido.js`. Después: decidir si se conecta Loyverse
+> (fase 2) o se hace el responsive de desktop/tablet.
 
 ---
 
@@ -143,5 +147,11 @@ Backend = Google Apps Script + Sheets (mismo patrón que El Ojo Maestro).
 
 ---
 
-*Actualizar esta bitácora al cerrar cada sesión importante. Fecha de última
-actualización: 2026-07-30.*
+*Actualizar esta bitácora al cerrar cada sesión importante.*
+
+### 📌 Historial de cierres
+- **2026-07-30 — Cierre #1:** app completa en vivo con dominio propio, backend online,
+  panel admin (métricas + editor + subir fotos), notificaciones, onboarding, referidos,
+  juegos con logros, misiones calculadas, QR imprimible. Textos de notificaciones
+  listos en `NOTIFICACIONES.md`. Pendiente inmediato: Toño pega los textos en OneSignal
+  y pone su WhatsApp real.
