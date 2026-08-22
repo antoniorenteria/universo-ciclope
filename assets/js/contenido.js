@@ -49,6 +49,40 @@ const CONTENIDO = {
       accion:'resena', cta:'Dejar reseña' },
   ],
 
+  /* ---------- POP-UP DE BIENVENIDA / DESCUENTO ----------------
+     Aparece SOLO la primera vez que el explorador entra. Es una
+     "card" vertical (proporción 1080x1920) que se voltea al tocarla,
+     con un destello girando alrededor (igual que las Promos).
+       · frente = banner (portada)     · dorso = contraportada
+     Botón inferior: "Toca y Descubre tu recompensa" -> al voltear
+     dice "Jugar ahora" y abre el juego (juego: 'gema'|'ojo').
+     Es un banner de descuento si superas `minPuntos` en el juego.
+
+     Al SALIR del juego se muestra `salida`: la invitación a agregar
+     a la pantalla de inicio + 3 botones de beneficio inmediato.
+
+     Las imágenes se pueden subir desde el panel /admin/ (secciones
+     "Pop-up de bienvenida"), o dejar aquí una URL / ruta local.
+  ------------------------------------------------------------ */
+  popup: {
+    activo: true,
+    frente: 'assets/img/promo/frente.jpg',   // banner / portada
+    dorso:  'assets/img/promo/dorso.jpg',     // contraportada
+    btnFrente: 'Toca y Descubre tu recompensa',
+    btnDorso:  'Jugar ahora',
+    juego: 'gema',        // id del juego (ver 'juegos' abajo)
+    minPuntos: 15000,     // puntos para ganar el descuento (informativo)
+    salida: {
+      titulo: 'Sigue tu expedición',
+      sub: 'Agrégala a tu inicio y gana beneficios ahora mismo.',
+      ctas: [
+        { txt: 'Realiza esta Expedición', accion: 'expedicion' },
+        { txt: 'Registra tu visita',      accion: 'registrar' },
+        { txt: 'Deja tu reseña',          accion: 'resena' },
+      ],
+    },
+  },
+
   /* ---------- ARCHIVO CÍCLOPE (la wiki desbloqueable) ---------
      La enciclopedia oficial del universo. NUNCA se muestra todo:
      el explorador descubre. Cada elemento es una ficha aparte.

@@ -173,6 +173,31 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
 
       <div class="card">
+        <h3>🎴 Pop-up de bienvenida <span class="muted" style="font-weight:400">· primera visita · card que se voltea</span></h3>
+        <div class="chk" style="border:0;margin-bottom:6px"><input type="checkbox" id="pp-activo"><b>Mostrar el pop-up al entrar (solo la primera vez)</b></div>
+        <div class="mini">
+          <div class="field"><label>Imagen frente (banner / portada)</label>
+            <div class="upwrap"><input id="pp-frente" placeholder="URL, o sube una foto →">
+              <label class="upbtn">📤 Subir<input type="file" accept="image/*" hidden data-upfor="pp-frente"></label></div></div>
+          <div class="field"><label>Imagen dorso (contraportada)</label>
+            <div class="upwrap"><input id="pp-dorso" placeholder="URL, o sube una foto →">
+              <label class="upbtn">📤 Subir<input type="file" accept="image/*" hidden data-upfor="pp-dorso"></label></div></div>
+        </div>
+        <div class="mini">
+          <div class="field"><label>Botón (frente)</label><input id="pp-btnf" placeholder="Toca y Descubre tu recompensa"></div>
+          <div class="field"><label>Botón (al voltear)</label><input id="pp-btnd" placeholder="Jugar ahora"></div>
+        </div>
+        <div class="mini">
+          <div class="field"><label>Juego al que lleva</label><select id="pp-juego"><option value="gema">La Gema Mágica</option><option value="ojo">El Ojo del Cíclope</option></select></div>
+          <div class="field"><label>Puntos mínimos p/ descuento</label><input id="pp-min" type="number" placeholder="15000"></div>
+        </div>
+        <p class="muted" style="margin:6px 0 12px">Al salir del juego se muestra la invitación a agregar a inicio + estos 3 botones:</p>
+        <div class="field"><label>Título del pop-up de salida</label><input id="pp-stitulo" placeholder="Sigue tu expedición"></div>
+        <div class="field"><label>Subtítulo</label><input id="pp-ssub" placeholder="Agrégala a tu inicio y gana beneficios ahora mismo."></div>
+        <div id="pp-ctas"></div>
+      </div>
+
+      <div class="card">
         <h3>🧭 Misiones activas</h3>
         <div id="misiones"></div>
       </div>
@@ -293,6 +318,7 @@ function pintarConfig(){
   $('#h-accion').value = h.accion||'expedicion'; $('#h-bg').value=h.bg||'';
   renderNovs(CFG.novedades||null);
   renderPromos(CFG.promos||null);
+  pintarPopup(CFG.popup||null);
   const activas = CFG.misionesActivas || null;
   $('#misiones').innerHTML = MISIONES.map(m=>`<label class="chk"><input type="checkbox" data-mid="${m.id}" ${(!activas||activas.includes(m.id))?'checked':''}><span><b>${m.nombre}</b><small>${m.desc}</small></span></label>`).join('');
 }
@@ -323,6 +349,34 @@ function rowPromo(p){
 }
 function opts(vals,sel){ return vals.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${v||'(sin acción)'}</option>`).join(''); }
 
+/* ---- POP-UP DE BIENVENIDA ---- */
+const PP_ACCIONES = ['expedicion','registrar','resena','juegos','archivo','recompensas'];
+function pintarPopup(p){
+  p = p || {};
+  const s = p.salida || {};
+  $('#pp-activo').checked = p.activo!==false;
+  $('#pp-frente').value = p.frente||''; $('#pp-dorso').value = p.dorso||'';
+  $('#pp-btnf').value = p.btnFrente||''; $('#pp-btnd').value = p.btnDorso||'';
+  $('#pp-juego').value = p.juego||'gema'; $('#pp-min').value = p.minPuntos||'';
+  $('#pp-stitulo').value = s.titulo||''; $('#pp-ssub').value = s.sub||'';
+  const ctas = (s.ctas && s.ctas.length ? s.ctas : [{},{},{}]).slice(0,3);
+  while (ctas.length < 3) ctas.push({});
+  $('#pp-ctas').innerHTML = ctas.map((c,i)=>`<div class="mini" data-ppcta>
+    <div class="field"><label>CTA ${i+1} · texto</label><input data-f="txt" value="${esc(c.txt||'')}" placeholder="Realiza esta Expedición"></div>
+    <div class="field"><label>CTA ${i+1} · acción</label><select data-f="accion">${opts(PP_ACCIONES,c.accion)}</select></div>
+  </div>`).join('');
+}
+function recolectarPopup(){
+  const ctas = $$('#pp-ctas [data-ppcta]').map(r=>({ txt:val(r,'txt'), accion:val(r,'accion') })).filter(c=>c.txt);
+  return {
+    activo: $('#pp-activo').checked,
+    frente: $('#pp-frente').value.trim(), dorso: $('#pp-dorso').value.trim(),
+    btnFrente: $('#pp-btnf').value.trim(), btnDorso: $('#pp-btnd').value.trim(),
+    juego: $('#pp-juego').value, minPuntos: +$('#pp-min').value || 0,
+    salida: { titulo: $('#pp-stitulo').value.trim(), sub: $('#pp-ssub').value.trim(), ctas },
+  };
+}
+
 $('#add-nov').addEventListener('click', ()=>{ $('#novs').insertAdjacentHTML('beforeend', rowNov({accion:'archivo'})); });
 $('#add-promo').addEventListener('click', ()=>{ $('#promos').insertAdjacentHTML('beforeend', rowPromo({activo:true,accion:''})); });
 document.addEventListener('click', e=>{ if(e.target.matches('[data-del]')) e.target.closest('.row-item').remove(); });
@@ -332,7 +386,8 @@ function recolectar(){
   const novedades = $$('#novs [data-nov]').map(r=>({ img:val(r,'img'), tag:val(r,'tag'), titulo:val(r,'titulo'), accion:val(r,'accion') })).filter(n=>n.titulo||n.img);
   const promos = $$('#promos [data-promo]').map(r=>({ activo:true, ico:val(r,'ico'), titulo:val(r,'titulo'), texto:val(r,'texto'), cta:val(r,'cta'), accion:val(r,'accion') })).filter(p=>p.titulo);
   const misionesActivas = $$('#misiones input:checked').map(c=>c.dataset.mid);
-  return { hero, novedades, promos, misionesActivas };
+  const popup = recolectarPopup();
+  return { hero, novedades, promos, popup, misionesActivas };
 }
 const val = (r,f)=> r.querySelector(`[data-f="${f}"]`).value.trim();
 

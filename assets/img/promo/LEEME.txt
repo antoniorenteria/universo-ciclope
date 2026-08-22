@@ -1,0 +1,20 @@
+POP-UP DE BIENVENIDA / DESCUENTO
+================================
+
+Aquí van las 2 imágenes del pop-up que aparece la primera vez que un
+explorador entra al Universo Cíclope (la "card" que se voltea).
+
+Proporción recomendada: 1080 x 1920 px (vertical, 9:16).
+
+  frente.jpg  ->  el BANNER (portada) que se ve al abrir el pop-up.
+  dorso.jpg   ->  la CONTRAPORTADA que se ve al voltear la card.
+
+Dos formas de ponerlas:
+
+1) Rápido (archivos): deja aquí los archivos con esos nombres exactos
+   (frente.jpg y dorso.jpg) y súbelos al repo. Ya están enlazados por
+   defecto en assets/js/contenido.js.
+
+2) Sin código (recomendado): entra al panel /admin/ -> pestaña
+   "Contenido" -> tarjeta "🎴 Pop-up de bienvenida" y súbelas con el
+   botón "📤 Subir". Se guardan en Drive y quedan enlazadas solas.

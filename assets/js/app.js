@@ -66,7 +66,7 @@
     gate.classList.add('oculto');
     document.body.classList.remove('bloqueado');
     setTimeout(() => { gate.style.display='none'; }, 650);
-    setTimeout(mostrarOnboard, 500);     // pop-up de bienvenida / agregar a inicio
+    setTimeout(mostrarPromoPopup, 500);  // pop-up de bienvenida / descuento (1ª vez)
   }
   if (gate) {
     document.body.classList.add('bloqueado');
@@ -109,6 +109,110 @@
           3. Toca <b>Agregar</b>. ¡Listo!</div>`;
         $('#ob-install').textContent = 'Entendido'; iosPaso = true;
       } else { cerrarOnboard(); }
+    });
+  }
+
+  /* ---------------- INSTALAR (agregar a inicio) — compartido ---------------- */
+  /* Lógica reutilizable de "agregar a la pantalla de inicio" para el
+     pop-up de onboarding y el pop-up de salida del juego. */
+  function intentarInstalar(onIOS, onDone) {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.catch(()=>{}).finally(() => { deferredPrompt = null; onDone && onDone(); });
+    } else if (esIOS) {
+      onIOS && onIOS();
+    } else {
+      onDone && onDone();
+    }
+  }
+
+  /* ---------------- POP-UP DE DESCUENTO (flip card, 1ª vez) ---------------- */
+  const promopop = $('#promopop'), flipcard = $('#flipcard');
+  let pendienteSalida = false;   // ¿mostrar el pop-up de salida al cerrar el juego?
+
+  function mostrarPromoPopup() {
+    const cfg = CONTENIDO.popup || {};
+    const yaVisto = localStorage.getItem('uc_promo_popup') === '1';
+    if (!promopop || !cfg.activo || yaVisto) { mostrarOnboard(); return; }
+    const fr = $('#promo-frente'), ds = $('#promo-dorso');
+    if (fr && cfg.frente) fr.src = cfg.frente;
+    if (ds && cfg.dorso)  ds.src = cfg.dorso;
+    setFlip(false);
+    promopop.hidden = false;
+    document.body.classList.add('bloqueado');
+    localStorage.setItem('uc_promo_popup', '1');   // solo la primera vez
+  }
+  function setFlip(f) {
+    if (!flipcard) return;
+    flipcard.classList.toggle('is-flipped', !!f);
+    const cfg = CONTENIDO.popup || {};
+    const cta = $('#promopop-cta');
+    if (cta) {
+      cta.textContent = f ? (cfg.btnDorso || 'Jugar ahora') : (cfg.btnFrente || 'Toca y Descubre tu recompensa');
+      cta.dataset.jugar = f ? '1' : '';
+    }
+  }
+  function cerrarPromoPopup(vamosAJugar) {
+    if (promopop) promopop.hidden = true;
+    if (!player.classList.contains('abierto')) document.body.classList.remove('bloqueado');
+    if (!vamosAJugar) setTimeout(autoPromptNotis, 300);
+  }
+  if (flipcard) {
+    flipcard.addEventListener('click', () => setFlip(!flipcard.classList.contains('is-flipped')));
+    flipcard.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); setFlip(!flipcard.classList.contains('is-flipped')); } });
+  }
+  if (promopop) {
+    $('#promopop-x').addEventListener('click', () => cerrarPromoPopup(false));
+    $('#promopop-cta').addEventListener('click', e => {
+      e.stopPropagation();
+      const cfg = CONTENIDO.popup || {};
+      if (e.currentTarget.dataset.jugar === '1') {
+        pendienteSalida = true;
+        cerrarPromoPopup(true);
+        abrirJuego(cfg.juego || 'gema');
+      } else {
+        setFlip(true);
+      }
+    });
+  }
+
+  /* ---------------- POP-UP DE SALIDA DEL JUEGO ---------------- */
+  const exitpop = $('#exitpop');
+  function mostrarExitPopup() {
+    if (!exitpop) return;
+    const cfg = (CONTENIDO.popup || {}).salida || {};
+    $('#exit-title').textContent = cfg.titulo || 'Universo Cíclope';
+    $('#exit-sub').textContent   = cfg.sub || 'Agrégala a tu inicio y gana beneficios ahora mismo.';
+    const ctas = (cfg.ctas || []).filter(c => c && c.txt).slice(0, 3);
+    $('#exit-ctas').innerHTML = ctas.map(c =>
+      `<button class="btn btn--ghost btn--full" data-exit-accion="${esc(c.accion||'')}">${esc(c.txt)}</button>`).join('');
+    const inst = $('#exit-install');
+    if (inst) inst.style.display = enStandalone ? 'none' : '';
+    exitpop.hidden = false;
+    document.body.classList.add('bloqueado');
+  }
+  function cerrarExitPopup() {
+    if (exitpop) exitpop.hidden = true;
+    if (!player.classList.contains('abierto')) document.body.classList.remove('bloqueado');
+    localStorage.setItem('uc_onboard', '1');
+  }
+  if (exitpop) {
+    let exitIosPaso = false;
+    $('#exit-close').addEventListener('click', cerrarExitPopup);
+    $('#exit-install').addEventListener('click', () => {
+      if (exitIosPaso) return cerrarExitPopup();
+      intentarInstalar(
+        () => { $('#exit-sub').innerHTML = 'En iPhone: toca <b>Compartir</b> ⬆️ y elige <b>“Agregar a inicio”</b>.'; $('#exit-install').textContent = 'Entendido'; exitIosPaso = true; },
+        cerrarExitPopup
+      );
+    });
+    exitpop.addEventListener('click', e => {
+      const b = e.target.closest('[data-exit-accion]'); if (!b) return;
+      const a = b.dataset.exitAccion;
+      cerrarExitPopup();
+      if (a === 'registrar') return modalSellar();
+      if (a === 'resena')    return modalResena();
+      if (a)                 return ir(a);
     });
   }
 
@@ -505,6 +609,7 @@
     document.body.classList.remove('bloqueado');
     $('#player-frame').src = 'about:blank';
     render(document.body.dataset.sec || 'inicio');
+    if (pendienteSalida) { pendienteSalida = false; setTimeout(mostrarExitPopup, 350); }
   }
   $('#player-x').addEventListener('click', cerrarJuego);
 
@@ -800,6 +905,15 @@
     if (cfg.hero && typeof cfg.hero === 'object') { CONTENIDO.hero = Object.assign({}, CONTENIDO.hero, cfg.hero); cambio = true; }
     if (Array.isArray(cfg.novedades) && cfg.novedades.length) { CONTENIDO.novedades = cfg.novedades; cambio = true; }
     if (Array.isArray(cfg.promos)) { CONTENIDO.promos = cfg.promos; cambio = true; }
+    if (cfg.popup && typeof cfg.popup === 'object') {
+      const base = CONTENIDO.popup || {};
+      const merged = Object.assign({}, base, cfg.popup);
+      merged.salida = Object.assign({}, base.salida || {}, cfg.popup.salida || {});
+      if (!Array.isArray(merged.salida.ctas) || !merged.salida.ctas.length) {
+        merged.salida.ctas = (base.salida || {}).ctas || [];
+      }
+      CONTENIDO.popup = merged; cambio = true;
+    }
     if (Array.isArray(cfg.misionesActivas)) {
       REGLAS.encomiendas.forEach(e => { e.activa = cfg.misionesActivas.includes(e.id); });
       cambio = true;

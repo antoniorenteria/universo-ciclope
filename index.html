@@ -60,6 +60,39 @@
   </div>
 </div>
 
+<!-- ============= POP-UP DE BIENVENIDA / DESCUENTO (primera vez) ============= -->
+<div class="promopop" id="promopop" hidden>
+  <button class="promopop__x" id="promopop-x" aria-label="Cerrar">✕</button>
+  <div class="promopop__stage">
+    <div class="flipcard" id="flipcard" role="button" tabindex="0" aria-label="Toca la card para voltearla">
+      <div class="flipcard__inner">
+        <div class="flipcard__face flipcard__face--front">
+          <div class="flipcard__ph"><b>Banner de descuento</b><small>Supera 15,000 puntos en La Gema Mágica</small></div>
+          <img class="flipcard__img" id="promo-frente" alt="Promoción" onerror="this.remove()">
+        </div>
+        <div class="flipcard__face flipcard__face--back">
+          <div class="flipcard__ph"><b>Tu recompensa</b><small>Contraportada</small></div>
+          <img class="flipcard__img" id="promo-dorso" alt="Recompensa" onerror="this.remove()">
+        </div>
+      </div>
+    </div>
+    <button class="btn btn--solid promopop__cta" id="promopop-cta">Toca y Descubre tu recompensa</button>
+  </div>
+</div>
+
+<!-- ============= POP-UP AL SALIR DEL JUEGO (agregar a inicio + CTAs) ============= -->
+<div class="onboard" id="exitpop" hidden>
+  <div class="onboard__card">
+    <img class="onboard__eye" src="assets/img/isotipo.png" alt="" width="76">
+    <p class="onboard__kicker" id="exit-kicker">Sigue tu expedición</p>
+    <h2 class="onboard__title" id="exit-title">Universo Cíclope</h2>
+    <p class="onboard__sub" id="exit-sub">Agrégala a tu inicio y gana beneficios ahora mismo.</p>
+    <button class="btn btn--solid btn--full" id="exit-install">📲 Agregar a mi pantalla de inicio</button>
+    <div class="exit-ctas" id="exit-ctas"></div>
+    <button class="btn btn--ghost btn--full" id="exit-close" style="margin-top:8px">Ahora no</button>
+  </div>
+</div>
+
 <!-- ==================== APP ==================== -->
 <main class="app" id="app">
 

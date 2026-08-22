@@ -132,6 +132,40 @@ body[data-sec="perfil"]     .aura { background:radial-gradient(ellipse 110% 50% 
 .onboard__ios { text-align:left; background:var(--panel); border:1px solid var(--linea); clip-path:var(--notch); padding:16px; margin:18px 0; font-size:14px; line-height:1.6; color:var(--texto); }
 .onboard__ios b { color:var(--marfil); }
 
+/* botones CTA del pop-up de salida (agregar a inicio + beneficios) */
+.exit-ctas { display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+.exit-ctas:empty { display:none; }
+
+/* ============ POP-UP DE DESCUENTO (flip card + destello) ============ */
+.promopop { position:fixed; inset:0; z-index:340; display:grid; place-items:center; padding:22px;
+  background:radial-gradient(ellipse 95% 75% at 50% 32%, oklch(0.2 0.05 300 / .6), rgba(9,6,13,.94)); backdrop-filter:blur(7px);
+  animation:fade .4s var(--ease); }
+.promopop[hidden] { display:none; }
+.promopop__x { position:fixed; top:calc(env(safe-area-inset-top) + 14px); right:16px; z-index:2; width:42px; height:42px; display:grid; place-items:center;
+  background:oklch(0.88 0.19 95 / .12); border:1px solid var(--linea-suave); color:var(--marfil); font-size:18px; border-radius:50%; cursor:pointer; }
+.promopop__stage { display:flex; flex-direction:column; align-items:center; gap:20px; width:100%; }
+
+/* proporción 1080x1920 (9:16), más pequeña que la pantalla y con hueco para el botón */
+.flipcard { position:relative; aspect-ratio:9/16; height:min(60vh,540px); max-width:82vw; cursor:pointer; perspective:1500px;
+  -webkit-tap-highlight-color:transparent; }
+/* destello girando alrededor (igual que en Promos) */
+.flipcard::before { content:''; position:absolute; inset:-15px; border-radius:24px; z-index:0;
+  background:conic-gradient(from 0deg, transparent 0deg, var(--amarillo-hex) 55deg, var(--morado-luz) 140deg, transparent 210deg, var(--amarillo-hex) 315deg, transparent 360deg);
+  filter:blur(17px); opacity:.85; animation:girar 6s linear infinite; }
+.flipcard::after { content:''; position:absolute; inset:-3px; border-radius:16px; z-index:0; pointer-events:none;
+  box-shadow:0 0 46px oklch(0.88 0.19 95 / .5), inset 0 0 0 1px oklch(0.88 0.19 95 / .35); }
+@keyframes girar { to { transform:rotate(360deg); } }
+.flipcard__inner { position:relative; z-index:1; width:100%; height:100%; transition:transform .7s var(--ease); transform-style:preserve-3d; }
+.flipcard.is-flipped .flipcard__inner { transform:rotateY(180deg); }
+.flipcard__face { position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; border-radius:12px; overflow:hidden;
+  background:linear-gradient(160deg,#241a34,#151019); border:1px solid var(--linea); display:grid; place-items:center; }
+.flipcard__face--back { transform:rotateY(180deg); }
+.flipcard__img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; z-index:1; }
+.flipcard__ph { position:relative; z-index:0; text-align:center; padding:20px; color:var(--texto); }
+.flipcard__ph b { display:block; font-family:var(--display); font-weight:800; color:var(--marfil); font-size:20px; margin-bottom:6px; }
+.flipcard__ph small { font-size:12.5px; opacity:.8; }
+.promopop__cta { min-width:min(82vw,320px); }
+
 /* ============ SHELL ============ */
 .app { position:relative; z-index:1; max-width:var(--tope); margin:0 auto; padding:0 0 calc(var(--tabs-h) + env(safe-area-inset-bottom) + 18px); min-height:100dvh; }
 .vista { display:none; animation:entra .32s var(--ease); }

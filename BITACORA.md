@@ -104,6 +104,12 @@ Backend = Google Apps Script + Sheets (mismo patrón que El Ojo Maestro).
   (mar/mié/jue), Racha (30 días), Peregrino (2 sucursales), El Ojo Testigo (al reseñar).
 - **QR imprimible** (póster A4 + tarjeta de mesa, por sucursal).
 - Fix de parpadeo del hero (cachea el contenido editado).
+- **Pop-up de bienvenida/descuento** (1ª visita): card vertical 9:16 con
+  destello girando que se voltea al tocarla (frente = banner, dorso =
+  contraportada). Botón “Toca y Descubre tu recompensa” → al voltear “Jugar
+  ahora” abre La Gema Mágica. Al salir del juego: pop-up con “agregar a inicio”
+  + 3 CTAs de beneficio (Expedición / Registrar visita / Reseña). Imágenes y
+  textos editables desde /admin/ (tarjeta “🎴 Pop-up de bienvenida”).
 
 ---
 
