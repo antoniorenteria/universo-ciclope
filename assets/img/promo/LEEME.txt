@@ -6,15 +6,20 @@ explorador entra al Universo Cíclope (la "card" que se voltea).
 
 Proporción recomendada: 1080 x 1920 px (vertical, 9:16).
 
-  frente.jpg  ->  el BANNER (portada) que se ve al abrir el pop-up.
-  dorso.jpg   ->  la CONTRAPORTADA que se ve al voltear la card.
+  frente.png  ->  el BANNER (portada) que se ve al abrir el pop-up.
+  dorso.png   ->  la CONTRAPORTADA que se ve al voltear la card.
+
+Ya hay 2 imágenes de PRUEBA con esos nombres (generadas con la marca).
+Reemplázalas por las definitivas cuando las tengas.
 
 Dos formas de ponerlas:
 
 1) Rápido (archivos): deja aquí los archivos con esos nombres exactos
-   (frente.jpg y dorso.jpg) y súbelos al repo. Ya están enlazados por
-   defecto en assets/js/contenido.js.
+   (frente.png y dorso.png) y súbelos al repo. Ya están enlazados por
+   defecto en assets/js/contenido.js. (También sirve .jpg si cambias
+   la ruta en contenido.js.)
 
 2) Sin código (recomendado): entra al panel /admin/ -> pestaña
    "Contenido" -> tarjeta "🎴 Pop-up de bienvenida" y súbelas con el
-   botón "📤 Subir". Se guardan en Drive y quedan enlazadas solas.
+   botón "📤 Subir". Se guardan en Drive y quedan enlazadas solas
+   (esto tiene prioridad sobre los archivos de esta carpeta).

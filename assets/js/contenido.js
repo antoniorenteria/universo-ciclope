@@ -66,8 +66,8 @@ const CONTENIDO = {
   ------------------------------------------------------------ */
   popup: {
     activo: true,
-    frente: 'assets/img/promo/frente.jpg',   // banner / portada
-    dorso:  'assets/img/promo/dorso.jpg',     // contraportada
+    frente: 'assets/img/promo/frente.png',   // banner / portada
+    dorso:  'assets/img/promo/dorso.png',     // contraportada
     btnFrente: 'Toca y Descubre tu recompensa',
     btnDorso:  'Jugar ahora',
     juego: 'gema',        // id del juego (ver 'juegos' abajo)
