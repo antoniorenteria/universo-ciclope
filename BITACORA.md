@@ -202,6 +202,25 @@ que la app detecte los 15,000.
 
 ---
 
+## 🖼️ Encabezado + Novedades fijados en código (2026-08-28)
+
+**Por qué:** Toño cambió el hero y las novedades desde /admin/ pero **no se guardaron en el
+servidor** (config del backend = `{}`; el backend SÍ funciona —probadas todas las acciones—,
+el guardado no llegó). Para que sea a prueba de fallos se dejó el contenido **fijo en
+`contenido.js`** en vez de depender del panel.
+- **Hero:** fondo `assets/img/hero-app.jpg` (vaso calavera recortado sin texto), etiqueta
+  "SOLO EN LA APP", título "50% en tu brebaje", texto de reto (15,000 pts en Gema Mágica),
+  CTA "Jugar y ganar" → juegos. (Liga con el pop-up de la promo.)
+- **Novedades (4 promos):** `assets/img/nov/promo-{cerebros,alitas,ninos,cumple}.jpg`
+  (stories 9:16 recortadas a 4:5 centradas ~720x900, contenido conservado). Títulos: 1kg
+  cerebros $335 (martes), 25 alitas $329 (miércoles), niños comen gratis (domingos), postre
+  de cumpleaños. Todas llevan a `expedicion`.
+- **Nota panel admin:** el editor de contenido guarda a la hoja Config, pero el guardado de
+  Toño no persistió. Si vuelve a usarlo, confirmar que salga el "✓ Guardado" verde. Ojo:
+  imágenes subidas por el panel quedan como URL `drive.google.com/thumbnail?id=...` (pueden
+  ser inestables para hotlink); por eso conviene el contenido crítico fijo en código.
+- **SW** `uc-v13`. Fuentes originales en `1.Redes Sociales/1. 2026/Promos/`.
+
 ### 📌 Historial de cierres
 - **2026-07-30 — Cierre #1:** app completa en vivo con dominio propio, backend online,
   panel admin (métricas + editor + subir fotos), notificaciones, onboarding, referidos,

@@ -15,12 +15,12 @@ const CONTENIDO = {
   ------------------------------------------------------------ */
   hero: {
     activo: true,
-    etiqueta: 'NUEVA TEMPORADA',
-    titulo: 'El Ojo de Vorak despertó',
-    texto: 'Una reliquia se perdió entre las bases. Mirano necesita exploradores. La expedición está abierta.',
-    cta: 'Unirme a la expedición',
-    accion: 'expedicion',
-    bg: 'assets/img/lore/magmafera.jpg',
+    etiqueta: 'SOLO EN LA APP',
+    titulo: '50% en tu brebaje',
+    texto: 'Supera los 15,000 puntos en la Gema Mágica y gánate tu brebaje a mitad de precio.',
+    cta: 'Jugar y ganar',
+    accion: 'juegos',
+    bg: 'assets/img/hero-app.jpg',
   },
 
   /* ---------- NOVEDADES · CARRUSEL DE IMÁGENES ----------------
@@ -28,12 +28,10 @@ const CONTENIDO = {
      a dónde lleva al tocarla.
   ------------------------------------------------------------ */
   novedades: [
-    { img:'assets/img/nov/hechicera.jpg', tag:'PERSONAJE', titulo:'Anodina, la princesa guerrera', accion:'archivo' },
-    { img:'assets/img/nov/malteadas.jpg', tag:'MENÚ',      titulo:'Malteadas del Universo',        accion:'recompensas' },
-    { img:'assets/img/nov/cerebros.jpg',  tag:'MENÚ',      titulo:'Cerebros: el clásico',          accion:'recompensas' },
-    { img:'assets/img/nov/planeta.jpg',   tag:'ARCHIVO',   titulo:'Explora los planetas',          accion:'archivo' },
-    { img:'assets/img/nov/kori.jpg',      tag:'UNIVERSO',  titulo:'Nuevas criaturas',              accion:'archivo' },
-    { img:'assets/img/nov/dedos.jpg',     tag:'MENÚ',      titulo:'Dedos de la casa',              accion:'recompensas' },
+    { img:'assets/img/nov/promo-cerebros.jpg', tag:'MARTES',     titulo:'1 kg de cerebros $335',   accion:'expedicion' },
+    { img:'assets/img/nov/promo-alitas.jpg',   tag:'MIÉRCOLES',  titulo:'25 alitas por $329',      accion:'expedicion' },
+    { img:'assets/img/nov/promo-ninos.jpg',    tag:'DOMINGOS',   titulo:'Niños comen gratis',      accion:'expedicion' },
+    { img:'assets/img/nov/promo-cumple.jpg',   tag:'CUMPLEAÑOS', titulo:'Tu postre en tu cumple',  accion:'expedicion' },
   ],
 
   /* ---------- DESCUBRIMIENTOS (con acción concreta) ----------
