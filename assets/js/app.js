@@ -66,7 +66,7 @@
     gate.classList.add('oculto');
     document.body.classList.remove('bloqueado');
     setTimeout(() => { gate.style.display='none'; }, 650);
-    setTimeout(mostrarOnboard, 500);     // pop-up de bienvenida / agregar a inicio
+    setTimeout(arrancarBienvenida, 500);   // promo (card volteable) o, si ya se vio, onboarding
   }
   if (gate) {
     document.body.classList.add('bloqueado');
@@ -76,15 +76,82 @@
   $('#gate-mute') && $('#gate-mute').addEventListener('click', e => { e.stopPropagation(); toggleMute(); });
   $('#music-toggle') && $('#music-toggle').addEventListener('click', toggleMute);
 
-  /* ---------------- ONBOARDING / AGREGAR A INICIO ---------------- */
+  /* ---------------- SECUENCIA DE BIENVENIDA ----------------
+     1er ingreso: gate -> POP-UP PROMO (card volteable) -> juego ->
+     al salir del juego -> ONBOARDING (agregar a inicio + 3 CTAs).
+     Si ya se vio la promo, se salta directo al onboarding/notis. */
   let deferredPrompt = null, iosPaso = false;
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
   const enStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const onboard = $('#onboard');
+  const promoEl = $('#promo');
+  let promoLanzoJuego = false;   // marca si el juego se abrió desde la promo
+  let promoPremioGanado = false; // marca si superó la meta de puntos en el juego
 
+  function cfgPromo() { return (CONTENIDO && CONTENIDO.promoPopup) || {}; }
+
+  function arrancarBienvenida() {
+    const pc = cfgPromo();
+    const yaVista = localStorage.getItem('uc_promo_visto') === '1';
+    if (promoEl && pc.activo && pc.frente && pc.dorso && !yaVista) return mostrarPromo();
+    mostrarOnboard();
+  }
+
+  /* ---- POP-UP PROMO (card volteable) ---- */
+  function mostrarPromo() {
+    const pc = cfgPromo();
+    const card = $('#promo-card'), btn = $('#promo-btn');
+    $('#promo-dorso').src  = pc.dorso  || '';
+    $('#promo-frente').src = pc.frente || '';
+    btn.textContent = pc.btnDescubrir || 'Toca y descubre tu recompensa';
+    card.classList.remove('is-flipped');
+    $('#promo-flip').setAttribute('aria-pressed', 'false');
+    promoEl.hidden = false;
+    document.body.classList.add('bloqueado');
+  }
+  function voltearPromo() {
+    const pc = cfgPromo();
+    const card = $('#promo-card'), btn = $('#promo-btn');
+    if (card.classList.contains('is-flipped')) return;
+    card.classList.add('is-flipped');
+    $('#promo-flip').setAttribute('aria-pressed', 'true');
+    btn.textContent = pc.btnJugar || 'Jugar ahora';
+  }
+  function cerrarPromo() {
+    if (promoEl) promoEl.hidden = true;
+    document.body.classList.remove('bloqueado');
+    localStorage.setItem('uc_promo_visto', '1');
+  }
+  if (promoEl) {
+    $('#promo-flip').addEventListener('click', voltearPromo);
+    $('#promo-x').addEventListener('click', () => { cerrarPromo(); mostrarOnboard(); });
+    $('#promo-btn').addEventListener('click', () => {
+      const card = $('#promo-card');
+      if (!card.classList.contains('is-flipped')) return voltearPromo();
+      // ya volteada -> Jugar ahora
+      cerrarPromo();
+      promoLanzoJuego = true;
+      abrirJuego(cfgPromo().juego || 'gema');
+    });
+  }
+
+  /* ---- ONBOARDING (agregar a inicio + 3 CTAs de beneficio) ---- */
+  function pintarOnboardCtas() {
+    const cont = $('#ob-body'); if (!cont) return;
+    const pc = cfgPromo();
+    if ($('#ob-sub')) $('#ob-sub').textContent = pc.postSub || 'Aprovecha ahora mismo, Explorador:';
+    const ctas = (pc.ctas || []).slice(0, 3);
+    cont.innerHTML = ctas.map(c =>
+      `<button class="btn btn--solid" data-cta="${esc(c.accion||'')}">${esc(c.txt||'')}</button>`
+    ).join('') || `<button class="btn btn--solid" data-cta="expedicion">Ver mi expedición</button>`;
+  }
   function mostrarOnboard() {
-    if (!onboard || enStandalone || localStorage.getItem('uc_onboard') === '1') { autoPromptNotis(); return; }
+    if (!onboard || localStorage.getItem('uc_onboard') === '1') { autoPromptNotis(); return; }
+    iosPaso = false;
+    pintarOnboardCtas();
+    $('#ob-install').style.display = enStandalone ? 'none' : '';
+    $('#ob-install').textContent = '📲 Agregar a mi pantalla de inicio';
     onboard.hidden = false;
     document.body.classList.add('bloqueado');
   }
@@ -94,8 +161,19 @@
     localStorage.setItem('uc_onboard', '1');
     setTimeout(autoPromptNotis, 400);
   }
+  function hacerCta(accion) {
+    cerrarOnboard();
+    setTimeout(() => {
+      if (accion === 'registrar') return modalSellar();
+      if (accion === 'resena')    return modalResena();
+      if (accion)                 return ir(accion);
+    }, 260);
+  }
   if (onboard) {
     $('#ob-close').addEventListener('click', cerrarOnboard);
+    $('#ob-body').addEventListener('click', e => {
+      const b = e.target.closest('[data-cta]'); if (b) hacerCta(b.dataset.cta);
+    });
     $('#ob-install').addEventListener('click', async () => {
       if (iosPaso) return cerrarOnboard();
       if (deferredPrompt) {
@@ -505,6 +583,24 @@
     document.body.classList.remove('bloqueado');
     $('#player-frame').src = 'about:blank';
     render(document.body.dataset.sec || 'inicio');
+    // Si el juego se abrió desde la promo de bienvenida, al salir
+    // mostramos el onboarding (agregar a inicio + 3 CTAs). Si ganó la
+    // recompensa, primero lo celebramos.
+    if (promoLanzoJuego) {
+      promoLanzoJuego = false;
+      const pc = cfgPromo();
+      if (promoPremioGanado) {
+        promoPremioGanado = false;
+        abrirModal(`<div style="text-align:center;padding:6px 2px">
+          <div style="font-size:44px;line-height:1">🏆</div>
+          <h3 style="font-family:var(--display);color:var(--marfil);font-size:22px;margin:8px 0 6px">¡Recompensa desbloqueada!</h3>
+          <p style="color:var(--texto);font-size:14px;margin-bottom:14px">Superaste los ${(pc.metaPuntos||15000).toLocaleString('es-MX')} puntos. Ganaste <b style="color:var(--marfil)">${esc(pc.recompensa||'tu recompensa')}</b>. Muéstralo en sucursal para hacerlo válido.</p>
+          <button class="btn btn--solid btn--full" data-cerrar-premio>¡Genial!</button>
+        </div>`);
+        return;
+      }
+      setTimeout(mostrarOnboard, 350);
+    }
   }
   $('#player-x').addEventListener('click', cerrarJuego);
 
@@ -514,11 +610,18 @@
     if (e.origin !== location.origin) return;
     const d = e.data;
     if (!d || d.tipo !== 'uc-score' || !d.juego) return;
-    const dadas = Acciones.otorgarLogros(P, d.juego, +d.score || 0);
+    const score = +d.score || 0;
+    const dadas = Acciones.otorgarLogros(P, d.juego, score);
     if (dadas > 0) {
       P = Explorador.actual();
       $('#hdr-pts').textContent = P.gemas;
       toast(`¡Logro! +${dadas} gemas`);
+    }
+    // Recompensa de la promo de bienvenida: superar la meta en su juego.
+    const pc = cfgPromo();
+    if (pc.activo && d.juego === (pc.juego || 'gema') && score >= (pc.metaPuntos || 15000)) {
+      if (localStorage.getItem('uc_promo_premio') !== '1') localStorage.setItem('uc_promo_premio', '1');
+      promoPremioGanado = true;   // se celebra al cerrar el juego
     }
   });
 
@@ -534,6 +637,9 @@
     if (!player.classList.contains('abierto')) document.body.classList.remove('bloqueado');
   }
   $('#modal-bg').addEventListener('click', cerrarModal);
+  $('#modal-card').addEventListener('click', e => {
+    if (e.target.closest('[data-cerrar-premio]')) { cerrarModal(); setTimeout(mostrarOnboard, 300); }
+  });
 
   function modalSellar() {
     const bases = REGLAS.sucursales.map(s => `<option value="${esc(s.nombre)}">${esc(s.nombre)}</option>`).join('');
@@ -800,6 +906,10 @@
     if (cfg.hero && typeof cfg.hero === 'object') { CONTENIDO.hero = Object.assign({}, CONTENIDO.hero, cfg.hero); cambio = true; }
     if (Array.isArray(cfg.novedades) && cfg.novedades.length) { CONTENIDO.novedades = cfg.novedades; cambio = true; }
     if (Array.isArray(cfg.promos)) { CONTENIDO.promos = cfg.promos; cambio = true; }
+    if (cfg.promoPopup && typeof cfg.promoPopup === 'object') {
+      CONTENIDO.promoPopup = Object.assign({}, CONTENIDO.promoPopup, cfg.promoPopup);
+      cambio = true;
+    }
     if (Array.isArray(cfg.misionesActivas)) {
       REGLAS.encomiendas.forEach(e => { e.activa = cfg.misionesActivas.includes(e.id); });
       cambio = true;

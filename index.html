@@ -43,20 +43,37 @@
   </div>
 </div>
 
+<!-- ============ POP-UP PROMO (card volteable con destello) ============ -->
+<div class="promo-pop" id="promo" hidden>
+  <div class="promo-pop__wrap">
+    <button class="promo-pop__x" id="promo-x" type="button" aria-label="Cerrar">✕</button>
+    <div class="promo-pop__card glow-card" id="promo-card">
+      <button class="promo-pop__flip" id="promo-flip" type="button" aria-pressed="false" aria-label="Toca para revelar tu recompensa">
+        <span class="promo-pop__inner">
+          <span class="promo-pop__face promo-pop__face--back">
+            <img id="promo-dorso" src="" alt="Carta del Universo Cíclope">
+            <span class="promo-pop__hint">Toca para revelar ✦</span>
+          </span>
+          <span class="promo-pop__face promo-pop__face--front">
+            <img id="promo-frente" src="" alt="Tu recompensa del Universo Cíclope">
+          </span>
+        </span>
+      </button>
+    </div>
+    <button class="btn btn--solid btn--full promo-pop__btn" id="promo-btn">Toca y descubre tu recompensa</button>
+  </div>
+</div>
+
 <!-- ==================== ONBOARDING ==================== -->
 <div class="onboard" id="onboard" hidden>
   <div class="onboard__card">
     <img class="onboard__eye" src="assets/img/isotipo.png" alt="" width="76">
     <p class="onboard__kicker">Bienvenido al</p>
     <h2 class="onboard__title">Universo Cíclope</h2>
-    <p class="onboard__sub">Tu expedición continúa fuera del restaurante.</p>
-    <ul class="onboard__list" id="ob-body">
-      <li><span>🎮</span><div><b>Juega</b> sin registrarte</div></li>
-      <li><span>🧭</span><div><b>Cumple misiones</b> en cada visita</div></li>
-      <li><span>💎</span><div><b>Gana gemas</b> y canjéalas por premios</div></li>
-    </ul>
+    <p class="onboard__sub" id="ob-sub">Tu expedición continúa fuera del restaurante.</p>
+    <div class="onboard__ctas" id="ob-body"></div>
     <button class="btn btn--solid btn--full" id="ob-install">📲 Agregar a mi pantalla de inicio</button>
-    <button class="btn btn--ghost btn--full" id="ob-close" style="margin-top:10px">Empezar</button>
+    <button class="btn btn--ghost btn--full" id="ob-close" style="margin-top:10px">Después</button>
   </div>
 </div>
 

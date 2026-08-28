@@ -149,6 +149,59 @@ Backend = Google Apps Script + Sheets (mismo patrón que El Ojo Maestro).
 
 *Actualizar esta bitácora al cerrar cada sesión importante.*
 
+---
+
+## 🎴 BRIEF EN CURSO (2026-08-28) — Pop-up de bienvenida con card volteable
+
+> Copy original de Toño, guardado para que no se pierda nada. Se está implementando.
+
+**Qué:** al ingresar por primera vez, un **pop-up flotante** (NO cubre toda la pantalla)
+con una **card 9:16 proporcional pero más pequeña** y un **destello alrededor** (el mismo
+efecto `.glow-card` / `.promo-card` del sitio web, sección Promos).
+
+**Cómo funciona:**
+- La card muestra primero el **dorso** (carta posterior: remolino morado + ojo dorado).
+- Un **botón inferior** dice **"Toca y descubre tu recompensa"**. Al tocar la card (o el botón),
+  **gira** y revela el **frente** = banner de promo (descuento).
+- Al girar, el botón cambia a **"Jugar ahora"** → abre el juego de la **Gema Mágica**.
+- La promo es un **banner de descuento** que se gana si **superan 15,000 puntos** en la Gema Mágica.
+- Al **salir del juego** se abre el **pop-up que ya existía** (invitación a "agregar a la pantalla
+  de inicio") pero con **3 botones CTA de beneficio inmediato**: "Realiza esta Expedición",
+  "Registra tu visita", "Deja tu reseña" (solo 3).
+
+**Imágenes:** Toño pasa banner (frente) + contraportada (dorso). Por ahora se usan las de
+`1.Redes Sociales/1. 2026/Promos/` (EADC - Promo app.png = 50% dto; EADC - Carta posterior.png)
+optimizadas a `assets/img/promo-frente.jpg` y `promo-dorso.jpg`. Config editable en
+`contenido.js → promoPopup` (frente/dorso/metaPuntos/textos/3 CTAs) y **desde el panel admin**
+(subir imágenes + textos, sin sesión de código).
+
+**Técnico:** el juego `juegos/gema-magica.html` NO reportaba score al padre (pendiente fase 2);
+se le agrega `postMessage {tipo:'uc-score', juego:'gema', score}` al terminar la partida para
+que la app detecte los 15,000.
+
+### ✅ IMPLEMENTADO y verificado en local (2026-08-28) — falta publicar
+- **HTML** (`index.html`): pop-up `#promo` (card 9:16 con caras dorso/frente + `.glow-card`),
+  y onboarding rehecho con `#ob-body` = 3 CTAs + "Agregar a inicio".
+- **CSS** (`assets/css/universo.css`): `.promo-pop*` (flip 3D idéntico al sitio) + `.glow-card`
+  con latido, y `.onboard__ctas`. La card mide ~58% del alto (flotante, no cubre pantalla).
+- **JS** (`assets/js/app.js`): secuencia gate→promo→juego→onboarding; `cfgPromo()`, `mostrarPromo`,
+  `voltearPromo`, reward al superar `metaPuntos` (modal 🏆), onboarding con CTAs; hook en
+  `aplicarConfig` para `cfg.promoPopup`. Flags: `uc_promo_visto`, `uc_onboard`, `uc_promo_premio`.
+- **Config** (`assets/js/contenido.js` → `promoPopup`): dorso/frente/textos/juego/metaPuntos/
+  recompensa/postSub/3 CTAs. Default usa `assets/img/promo-dorso.jpg` y `promo-frente.jpg`.
+- **Juego** (`juegos/gema-magica.html`): ahora reporta el score al padre al terminar.
+- **Admin** (`admin/index.html`): tarjeta "🎴 Pop-up de bienvenida" para subir dorso/frente
+  (reusa `subirImagen`→Drive) y editar textos/meta/CTAs; se guarda en la Config (sin redeploy).
+- **SW**: `VERSION` subida a `uc-v12`.
+- Imágenes default optimizadas desde `1.Redes Sociales/1. 2026/Promos/` (EADC - Promo app.png →
+  frente; EADC - Carta posterior.png → dorso), 680px, ~150 KB c/u.
+
+> **PRÓXIMO PASO:** Toño decide: (a) publicar YA con estas imágenes default, o (b) pasar el
+> banner/contraportada nuevos (o subirlos desde /admin/). Publicar = `git add -A && commit && push`
+> desde `universo-ciclope/` (Vercel/Pages redespliega solo). NO se ha publicado todavía.
+
+---
+
 ### 📌 Historial de cierres
 - **2026-07-30 — Cierre #1:** app completa en vivo con dominio propio, backend online,
   panel admin (métricas + editor + subir fotos), notificaciones, onboarding, referidos,

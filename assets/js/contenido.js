@@ -169,6 +169,33 @@ const CONTENIDO = {
     onesignalAppId: '19d69ae0-c5f7-4eba-871a-282d71b407e7',   // App ID de OneSignal (Web Push)
   },
 
+  /* ---------- POP-UP DE BIENVENIDA (card volteable) -----------
+     Aparece la PRIMERA vez que un Explorador entra. Es una card
+     estilo carta coleccionable: se ve el DORSO y al tocarla gira
+     y revela el FRENTE (banner de la promo). Botón:
+     "Toca y descubre..." -> al girar -> "Jugar ahora" (abre el juego).
+     La recompensa se gana superando 'metaPuntos' en ese juego.
+     Puedes cambiar imágenes y textos desde el panel /admin/.
+  ------------------------------------------------------------ */
+  promoPopup: {
+    activo: true,
+    dorso:  'assets/img/promo-dorso.jpg',   // carta posterior (se ve primero)
+    frente: 'assets/img/promo-frente.jpg',  // banner de promo (se revela al girar)
+    btnDescubrir: 'Toca y descubre tu recompensa',
+    btnJugar:     'Jugar ahora',
+    juego:        'gema',                    // id del juego destino (ver 'juegos')
+    metaPuntos:   15000,                     // puntos para GANAR la recompensa
+    recompensa:   '50% de descuento en tu brebaje',
+    // Pop-up que aparece al SALIR del juego (agregar a inicio + 3 acciones)
+    postTitulo: '¡Sigue tu expedición!',
+    postSub:    'Aprovecha ahora mismo, Explorador:',
+    ctas: [
+      { txt:'Realiza esta Expedición', accion:'expedicion' },
+      { txt:'Registra tu visita',      accion:'registrar'  },
+      { txt:'Deja tu reseña (+gemas)', accion:'resena'     },
+    ],
+  },
+
   /* ---------- COMPARTE TU EXPERIENCIA ------------------------- */
   compartir: {
     pregunta: '¿Cómo estuvo tu expedición?',

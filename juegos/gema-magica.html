@@ -630,6 +630,9 @@ function gameOver(){
   $('hud').classList.remove('on');
   const isNew = score>best;
   if(isNew){ best=score; localStorage.setItem('ciclope_best',best); }
+  // Reporta el puntaje a Universo Cíclope cuando el juego corre embebido en la app
+  // (para logros de gemas y para la recompensa de la promo de bienvenida).
+  try { if(window.parent && window.parent!==window){ window.parent.postMessage({tipo:'uc-score',juego:'gema',score:score},'*'); } }catch(_){}
   $('finScore').textContent=score;
   $('finNew').textContent = isNew?'★ NUEVO RÉCORD ★':'';
   const r=RANKS.find(r=>score>=r.min);

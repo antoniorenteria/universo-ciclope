@@ -375,6 +375,55 @@ body[data-sec="perfil"]     .aura { background:radial-gradient(ellipse 110% 50% 
 .empty { text-align:center; padding:34px 20px; color:var(--texto); opacity:.8; font-size:14px; }
 .foot { text-align:center; padding:26px 16px 8px; font-family:var(--body); font-size:11px; letter-spacing:.04em; color:var(--texto); opacity:.5; }
 
+/* ==================== POP-UP PROMO (card volteable + destello) ==================== */
+.promo-pop { position:fixed; inset:0; z-index:300; display:grid; place-items:center; padding:20px;
+  background:radial-gradient(120% 90% at 50% 30%, rgba(20,8,36,.72), rgba(6,3,12,.92)); backdrop-filter:blur(6px); }
+.promo-pop[hidden] { display:none; }
+.promo-pop__wrap { width:100%; max-width:340px; display:flex; flex-direction:column; align-items:center;
+  animation:promoIn .5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes promoIn { from { opacity:0; transform:translateY(16px) scale(.94); } to { opacity:1; transform:none; } }
+.promo-pop__x { position:absolute; top:14px; right:16px; width:38px; height:38px; border-radius:50%;
+  background:rgba(20,10,30,.55); border:1px solid rgba(255,255,255,.14); color:var(--marfil); font-size:16px;
+  cursor:pointer; z-index:2; }
+/* Card 9:16 proporcional pero pequeña: la altura manda para que NO cubra la pantalla */
+.promo-pop__card { perspective:1300px; width:auto; height:min(62vh,540px); aspect-ratio:9/16; }
+.promo-pop__flip { display:block; width:100%; height:100%; padding:0; border:0; background:none; cursor:pointer;
+  border-radius:20px; -webkit-tap-highlight-color:transparent; }
+.promo-pop__inner { position:relative; display:block; width:100%; height:100%;
+  transform-style:preserve-3d; transition:transform .75s cubic-bezier(.2,.75,.2,1); }
+.promo-pop__card.is-flipped .promo-pop__inner { transform:rotateY(180deg); }
+.promo-pop__face { position:absolute; inset:0; border-radius:20px; overflow:hidden;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  background:linear-gradient(160deg,#2a1348 0%,#160b26 100%);
+  box-shadow:0 14px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06) inset; }
+.promo-pop__face img { width:100%; height:100%; object-fit:cover; display:block; }
+.promo-pop__face--front { transform:rotateY(180deg); }
+.promo-pop__hint { position:absolute; left:10px; right:10px; bottom:12px; text-align:center;
+  font-family:var(--display); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; font-weight:700;
+  color:var(--marfil); background:rgba(20,10,30,.55); backdrop-filter:blur(3px);
+  padding:7px 4px; border-radius:999px; border:1px solid rgba(255,214,0,.4);
+  animation:hintPulse 1.8s ease-in-out infinite; }
+@keyframes hintPulse { 0%,100% { opacity:.85; } 50% { opacity:1; } }
+.promo-pop__btn { margin-top:18px; max-width:340px; }
+/* Destello alrededor (igual que .glow-card del sitio) con latido suave */
+.glow-card { position:relative; }
+.glow-card::before { content:""; position:absolute; inset:-24px; z-index:-1;
+  background:
+    radial-gradient(60% 55% at 30% 20%, oklch(0.88 0.19 95 / .20), transparent 70%),
+    radial-gradient(55% 50% at 75% 85%, oklch(0.55 0.24 300 / .30), transparent 70%);
+  filter:blur(20px); opacity:.9; animation:glowPulse 3.4s ease-in-out infinite; }
+@keyframes glowPulse { 0%,100% { opacity:.7; transform:scale(1); } 50% { opacity:1; transform:scale(1.06); } }
+
+/* CTAs del onboarding post-juego */
+.onboard__ctas { display:flex; flex-direction:column; gap:10px; margin:20px 0; }
+.onboard__ctas .btn { width:100%; justify-content:center; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  .promo-pop__inner { transition:opacity .3s ease; transform:none; }
+  .promo-pop__card.is-flipped .promo-pop__inner { transform:none; }
+  .promo-pop__face { backface-visibility:visible; -webkit-backface-visibility:visible; }
+  .promo-pop__face--front { transform:none; opacity:0; transition:opacity .3s ease; }
+  .promo-pop__card.is-flipped .promo-pop__face--back { opacity:0; }
+  .promo-pop__card.is-flipped .promo-pop__face--front { opacity:1; }
 }
