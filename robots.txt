@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /checkin/
+Disallow: /admin/
+
+Sitemap: https://universo.elanillodelciclope.com/sitemap.xml

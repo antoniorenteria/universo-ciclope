@@ -219,11 +219,13 @@ const CONTENIDO = {
   ------------------------------------------------------------ */
   geoZonas: {
     activo: true,
-    radioDefault: 900,           // metros: qué tan cerca cuenta como "en la zona"
+    radioDefault: 700,           // metros: qué tan cerca cuenta como "en la zona"
     zonas: [
-      { base:'Revolución', zona:'Pachuca de Soto',      lat:20.10110, lng:-98.75910, radio:900,
+      // Coordenadas EXACTAS tomadas de Google Maps (sept 2026). Si algún
+      // día cambian de local, actualízalas (clic derecho en el mapa → copiar).
+      { base:'Revolución', zona:'Pachuca de Soto',      lat:20.1201714, lng:-98.7377599, radio:700,
         saludo:'¡Estás cerca de la Base Revolución! Pásate: cada visita repara la nave de Mirano y suma sellos.' },
-      { base:'Tulipanes',  zona:'Mineral de la Reforma', lat:20.08500, lng:-98.71000, radio:900,
+      { base:'Tulipanes',  zona:'Mineral de la Reforma', lat:20.0603156, lng:-98.7706431, radio:700,
         saludo:'¡La Base Tulipanes te queda cerca! Ven por tu brebaje y registra tu visita.' },
     ],
   },

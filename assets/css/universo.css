@@ -430,3 +430,60 @@ body[data-sec="perfil"]     .aura { background:radial-gradient(ellipse 110% 50% 
   .promo-pop__card.is-flipped .promo-pop__face--back { opacity:0; }
   .promo-pop__card.is-flipped .promo-pop__face--front { opacity:1; }
 }
+
+/* ============================================================
+   ESCRITORIO / TABLET
+   La app es mobile-first; en pantallas grandes la columna se
+   ensancha y se centra, la nav inferior se vuelve una barra
+   flotante, las rejillas usan más columnas y el fondo cósmico
+   llena el resto. Todo el layout cuelga de --tope, así que
+   ensancharlo mantiene app, nav y modales alineados.
+   ============================================================ */
+@media (min-width: 600px) {
+  :root { --tope: 680px; }
+  .hero { min-height:420px; }
+  .hero__title { font-size:clamp(32px,4.4vw,44px); }
+  .hero__text { max-width:48ch; font-size:15px; }
+  .arch-grid { grid-template-columns:repeat(3, 1fr); }
+  .novimg { flex:0 0 240px; }
+  .pad { padding:0 20px; }
+  .rail { padding:2px 20px 8px; }
+  .hero { margin:8px 20px 0; }
+}
+
+@media (min-width: 900px) {
+  :root { --tope: 760px; }
+  /* la columna respira del borde superior y deja ver las estrellas */
+  .app { padding-top:6px; padding-bottom:calc(var(--tabs-h) + 52px); }
+  .top { border-radius:0 0 20px 20px; }
+  /* NAV inferior: barra flotante centrada (look de app de escritorio) */
+  .tabs {
+    left:0; right:0; bottom:20px;
+    height:var(--tabs-h);
+    width:min(var(--tope), calc(100% - 40px));
+    border:1px solid var(--linea-suave);
+    border-radius:999px; overflow:hidden;
+    box-shadow:0 16px 44px rgba(0,0,0,.55);
+  }
+  .tab.activo::before { border-radius:0 0 4px 4px; }
+  .hero { min-height:480px; }
+  .hook__card { min-height:176px; }
+  /* micro-interacción de hover (solo donde hay puntero fino) */
+  .card.listrow, .hook__card, .novimg, .arch, .reward, .pass-actions .btn { transition:transform .18s var(--ease), box-shadow .18s var(--ease); }
+  .card.listrow:hover, .hook__card:hover, .novimg:hover, .arch:hover { transform:translateY(-2px); }
+  .arch-grid { grid-template-columns:repeat(4, 1fr); }
+  /* MODALES: como diálogo centrado, no hoja inferior */
+  .modal { align-items:center; }
+  .modal__card { border-radius:20px; border:1px solid var(--linea-suave); max-height:86dvh;
+    padding:26px 24px; box-shadow:0 24px 70px rgba(0,0,0,.6); }
+  .modal__img { max-height:340px; width:auto; margin:0 auto 14px; }
+}
+
+@media (min-width: 1200px) {
+  :root { --tope: 820px; }
+}
+
+/* En puntero fino (ratón), pinta la nave/estrellas con más presencia */
+@media (min-width: 900px) and (pointer: fine) {
+  .aura { opacity:1; }
+}
