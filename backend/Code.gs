@@ -24,9 +24,13 @@
 const HOJA = 'Exploradores';
 const HOJA_CFG = 'Config';
 
-/* CLAVE DE ADMIN — cámbiala por una tuya. Es la contraseña del
-   panel de administración. No la compartas. */
-const ADMIN_KEY = 'ciclope-2026';
+/* CLAVE DE ADMIN / CAJA — es la contraseña del panel /admin/ y de la
+   página de caja /checkin/. NO se escribe aquí (el repo es PÚBLICO).
+   Se guarda en un lugar PRIVADO de tu Apps Script:
+     Apps Script → ⚙ Configuración del proyecto → "Propiedades del script"
+     → Agregar propiedad:  nombre = ADMIN_KEY   valor = tu contraseña nueva
+   Mientras no la pongas ahí, funciona la de respaldo 'ciclope-2026'. */
+const ADMIN_KEY = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY') || 'ciclope-2026';
 
 function doGet(e)  { return handle(e, e.parameter || {}); }
 function doPost(e) {
