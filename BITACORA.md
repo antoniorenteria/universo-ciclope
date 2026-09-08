@@ -261,9 +261,22 @@ en Mi perfil, estilo degradado con logo, y el sitio web en el perfil.
 - **SW** subido a `uc-v14` (+ qr.min.js en el caché).
 - `sitio: 'https://elanillodelciclope.com'` agregado en contenido.js.
 
-> **PRÓXIMO PASO:** (1) Publicar = `git add -A && git commit && git push` desde `universo-ciclope/`
-> (Pages/Vercel redespliega). (2) Toño re-despliega `Code.gs` (para la caja). (3) Toño pone las
-> **coordenadas exactas** de las 2 sucursales en `contenido.js → geoZonas`. NO se ha publicado aún.
+**Actualización 2026-09-07 (2ª tanda, YA PUBLICADO · SW uc-v15):**
+- **Coordenadas reales** puestas en `contenido.js → geoZonas` (Google Maps): Revolución
+  `20.1201714, -98.7377599` (Lic. Emilio Asiain, Av. Revolución 119); Tulipanes
+  `20.0603156, -98.7706431` (Av. de los Árboles 147, Los Pinos). Radio 700 m.
+- **Indexación en Google:** la app pasó a `index, follow` (+ canonical + Open Graph);
+  se agregó `robots.txt` (bloquea `/checkin/` y `/admin/`) y `sitemap.xml`. FALTA que Toño
+  agregue el sitio a **Google Search Console** (verificar el subdominio y enviar sitemap).
+  `/checkin/` sigue `noindex`.
+- **Responsive escritorio/tablet:** `--tope` se ensancha por breakpoints (680/760/820),
+  nav inferior flotante centrada ≥900px, rejillas con más columnas, modales como diálogo
+  centrado, micro-hover. Verificado a 1280 / 768 / 390. Móvil intacto.
+
+> **PRÓXIMO PASO:** (1) ✅ Publicado (commits 0e932cd + 92a5ad8). (2) Toño re-despliega
+> `Code.gs` (para que la caja registre; el resto ya sirve). (3) Toño agrega el sitio a Google
+> Search Console para que empiece a indexar. La contraseña de la caja = la misma `ADMIN_KEY`
+> del panel /admin/ (si nunca la cambió, es `ciclope-2026` → conviene cambiarla, el repo es público).
 
 ---
 
