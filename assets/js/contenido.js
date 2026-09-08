@@ -194,12 +194,38 @@ const CONTENIDO = {
     ],
   },
 
+  /* ---------- SITIO WEB OFICIAL ------------------------------- */
+  sitio: 'https://elanillodelciclope.com',
+
   /* ---------- COMPARTE TU EXPERIENCIA ------------------------- */
   compartir: {
     pregunta: '¿Cómo estuvo tu expedición?',
     enlaceGoogle: 'https://g.page/r/CQ/review',
     instagram: 'https://instagram.com/elanillodelciclope',
     tiktok: 'https://tiktok.com/@elanillodelciclope',
+  },
+
+  /* ---------- AVISOS POR ZONA (geolocalización) ---------------
+     Cuando el Explorador ABRE la app cerca de una base, le damos un
+     saludo/beneficio de esa zona. (En web NO existe el rastreo en
+     segundo plano como las apps nativas; esto funciona al abrir la
+     app con permiso de ubicación concedido.)
+     · activo:false lo apaga por completo.
+     · Cada base tiene lat/lng/radio y su 'saludo'.
+     ⚠️ TOÑO: pon las coordenadas EXACTAS de cada sucursal así →
+        Google Maps → busca tu local → clic derecho encima del punto
+        → el primer renglón son los números (lat, lng) → cópialos aquí.
+        Las de abajo son APROXIMADAS de cada zona; ajústalas.
+  ------------------------------------------------------------ */
+  geoZonas: {
+    activo: true,
+    radioDefault: 900,           // metros: qué tan cerca cuenta como "en la zona"
+    zonas: [
+      { base:'Revolución', zona:'Pachuca de Soto',      lat:20.10110, lng:-98.75910, radio:900,
+        saludo:'¡Estás cerca de la Base Revolución! Pásate: cada visita repara la nave de Mirano y suma sellos.' },
+      { base:'Tulipanes',  zona:'Mineral de la Reforma', lat:20.08500, lng:-98.71000, radio:900,
+        saludo:'¡La Base Tulipanes te queda cerca! Ven por tu brebaje y registra tu visita.' },
+    ],
   },
 
   /* ---------- CONTACTO / WHATSAPP ----------------------------- */

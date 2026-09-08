@@ -44,6 +44,10 @@ function handle(e, data) {
   if (accion === 'config')  return json({ ok: true, config: configLeer() }); // la app lee el contenido
   if (accion === 'referido') return json(acreditarReferido(data.invitadoId, data.codigo));
   if (accion === 'folio')   return json({ ok: true }); // fase 2: validar contra Loyverse
+  // --- de caja (requieren clave del personal) ---
+  if (accion === 'checkin') return json(admin(key, function () {
+    return checkin(data.id || (e.parameter && e.parameter.id), data.base || (e.parameter && e.parameter.base));
+  }));
   // --- de admin (requieren clave) ---
   if (accion === 'login')         return json({ ok: key === ADMIN_KEY });
   if (accion === 'stats')         return json(admin(key, stats));
@@ -116,6 +120,44 @@ function cargar(id) {
   var blob = sh.getRange(row, 9).getValue();
   try { return { ok: true, perfil: JSON.parse(blob) }; }
   catch (_) { return { ok: true, perfil: null }; }
+}
+
+/* ---------- CHECK-IN DESDE CAJA ----------
+   El cajero escanea el QR de la tarjeta del cliente (que abre
+   /checkin/?e=<id>) y registra la visita. Requiere la clave del
+   personal (ADMIN_KEY). Suma 1 sello + gemas, guarda la visita y
+   sube el 'sync' para que el teléfono del cliente lo adopte al
+   volver a abrir la app. Evita duplicados en ventana corta. */
+var GEMAS_VISITA = 10;      // igual que economia.gemasPorVisita en la app
+var CHECKIN_MIN_SEG = 90;   // no cuenta dos veces dentro de este lapso
+
+function checkin(id, base) {
+  if (!id) return { ok: false, msg: 'Falta el código del explorador.' };
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(8000); } catch (_) { return { ok: false, msg: 'ocupado' }; }
+  try {
+    var sh = sheet();
+    var row = findRow(sh, id);
+    if (!row) return { ok: false, msg: 'Explorador no encontrado. ¿Ya abrió la app al menos una vez?' };
+    var blob = {};
+    try { blob = JSON.parse(sh.getRange(row, 9).getValue()) || {}; } catch (_) { blob = {}; }
+    blob.visitas = blob.visitas || [];
+    var ahora = new Date();
+    // anti-duplicado: si la última visita fue hace muy poco, no recuenta
+    if (blob.visitas.length) {
+      var ult = new Date(blob.visitas[0].fecha).getTime();
+      if (!isNaN(ult) && (ahora.getTime() - ult) < CHECKIN_MIN_SEG * 1000)
+        return { ok: true, dup: true, apodo: blob.apodo || 'Explorador', sellos: blob.sellos || 0, gemas: blob.gemas || 0, msg: 'Esta visita ya se registró hace un momento.' };
+    }
+    blob.sellos = (blob.sellos || 0) + 1;
+    blob.gemas = (blob.gemas || 0) + GEMAS_VISITA;
+    blob.visitas.unshift({ folio: 'CAJA-' + ahora.getTime().toString(36).toUpperCase(), fecha: ahora.toISOString(), base: base || '', monto: 0 });
+    blob.sync = ahora.getTime();
+    var rango = (blob.sellos >= 25) ? 5 : (blob.sellos >= 15) ? 4 : (blob.sellos >= 8) ? 3 : (blob.sellos >= 3) ? 2 : 1;
+    var fila = [id, blob.apodo || '', blob.sellos, blob.gemas, blob.visitas.length, rango, blob.sync, ahora, JSON.stringify(blob)];
+    sh.getRange(row, 1, 1, fila.length).setValues([fila]);
+    return { ok: true, apodo: blob.apodo || 'Explorador', sellos: blob.sellos, gemas: blob.gemas, rango: rango, base: base || '' };
+  } finally { lock.releaseLock(); }
 }
 
 /* ---------- REFERIDOS ----------

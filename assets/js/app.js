@@ -469,8 +469,11 @@
     let html = secHead('Tu bitácora de explorador', 'Perfil');
     html += `<div class="pad">`;
 
-    // ---- CARD DE EXPLORACIÓN (estilo wallet) ----
-    html += `<div class="pass">
+    // ---- TARJETA DE LEALTAD (estilo wallet) ----
+    // El QR lleva a la página de CAJA con el id del Explorador: el
+    // cajero lo escanea y registra la visita. Se genera local (offline).
+    const qrCheckin = qrData(checkinURL(P.id), 4, 2);
+    html += `<div class="pass" id="pass-card">
       <div class="pass__top">
         <div class="pass__brand"><img src="assets/img/isotipo.png" alt=""><span>UNIVERSO CÍCLOPE</span></div>
         <span class="pass__lvl">NIVEL ${rango.nivel}</span>
@@ -486,8 +489,13 @@
         <div class="pass__stat"><b>${P.visitas.length}</b><span>Visitas</span></div>
       </div>
       <div class="pass__code">${esc(P.codigoRef)}</div>
-      <div class="pass__qr" data-modal="invitar" style="cursor:pointer" title="Tu invitación"><img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data=${encodeURIComponent(location.href.split('#')[0].split('?')[0] + '?ref=' + P.codigoRef)}" alt="Invitación" loading="lazy"></div>
+      <div class="pass__qr" data-modal="tarjeta" style="cursor:pointer" title="Muestra este código en caja"><img src="${qrCheckin}" alt="Mi código para caja"></div>
     </div>
+    <div class="pass-actions">
+      <button class="btn btn--ghost btn--sm" data-descargar>📥 Descargar</button>
+      <button class="btn btn--solid btn--sm" data-modal="wallet">🎫 Agregar a Wallet</button>
+    </div>
+    <p class="pass-hint">Muestra el código de tu tarjeta en caja y el equipo registra tu visita.</p>
     <div class="ficha__edit" data-modal="apodo">${P.apodo?'✎ Cambiar mi nombre':'✎ Ponte un nombre de explorador'}</div>`;
 
     // ---- NAVE DE MIRANO (con explicación clara) ----
@@ -519,6 +527,14 @@
           <small>${P.notis?'Te avisaremos de expediciones y premios':'Entérate de nuevos productos y expediciones'}</small></div></div>
       <span class="btn btn--sm ${P.notis?'btn--ghost':'btn--solid'}">${P.notis?'✓':'Activar'}</span></div>`;
 
+    // ---- avisos por zona (geolocalización) ----
+    if ((CONTENIDO.geoZonas||{}).activo) {
+      html += `<div class="card listrow" data-zona style="cursor:pointer">
+        <div class="listrow__l"><span class="listrow__ico">📍</span>
+          <div><b>Avisos por zona</b><small>Te saludamos al abrir la app cerca de una base</small></div></div>
+        <span class="btn btn--sm btn--solid">Activar</span></div>`;
+    }
+
     // ---- invitar (referidos) ----
     html += `<div class="card listrow" data-modal="invitar" style="cursor:pointer">
       <div class="listrow__l"><span class="listrow__ico">📣</span>
@@ -549,8 +565,10 @@
 
     // ---- enlaces de marca ----
     const C = CONTENIDO;
-    html += `<div class="h-sec"><h2 style="font-size:16px">Encuéntranos</h2></div>
-      <a class="card listrow" href="${esc(C.compartir.instagram)}" target="_blank" rel="noopener">
+    html += `<div class="h-sec"><h2 style="font-size:16px">Encuéntranos</h2></div>`;
+    if (C.sitio) html += `<a class="card listrow" href="${esc(C.sitio)}" target="_blank" rel="noopener">
+        <div class="listrow__l"><span class="listrow__ico">🌐</span><div><b>Sitio web oficial</b><small>${esc(C.sitio.replace(/^https?:\/\//,''))}</small></div></div><span>›</span></a>`;
+    html += `<a class="card listrow" href="${esc(C.compartir.instagram)}" target="_blank" rel="noopener">
         <div class="listrow__l"><span class="listrow__ico">📸</span><div><b>Instagram</b><small>@elanillodelciclope</small></div></div><span>›</span></a>
       <a class="card listrow" href="${esc(C.compartir.tiktok)}" target="_blank" rel="noopener">
         <div class="listrow__l"><span class="listrow__ico">🎵</span><div><b>TikTok</b><small>@elanillodelciclope</small></div></div><span>›</span></a>`;
@@ -638,7 +656,8 @@
   }
   $('#modal-bg').addEventListener('click', cerrarModal);
   $('#modal-card').addEventListener('click', e => {
-    if (e.target.closest('[data-cerrar-premio]')) { cerrarModal(); setTimeout(mostrarOnboard, 300); }
+    if (e.target.closest('[data-cerrar-premio]')) { cerrarModal(); setTimeout(mostrarOnboard, 300); return; }
+    if (e.target.closest('[data-descargar]')) { descargarTarjeta(); }
   });
 
   function modalSellar() {
@@ -811,6 +830,193 @@
     });
   }
 
+  /* ---------------- TARJETA DE LEALTAD (wallet) ---------------- */
+  // URL de caja que codifica el QR de la tarjeta (el cajero la abre al escanear).
+  function baseHref() { return location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, ''); }
+  function checkinURL(id) { return baseHref() + 'checkin/?e=' + encodeURIComponent(id); }
+
+  // Genera un QR como data URL (GIF) con la librería LOCAL (offline, sin taint).
+  function qrData(texto, cell, margin) {
+    try {
+      const q = qrcode(0, 'M');
+      q.addData(String(texto)); q.make();
+      return q.createDataURL(cell || 5, margin == null ? 3 : margin);
+    } catch (_) { return ''; }
+  }
+  function cargarImg(src) {
+    return new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  }
+  function rr(ctx, x, y, w, h, rad) {
+    ctx.beginPath(); ctx.moveTo(x + rad, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad);
+    ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath();
+  }
+  function recortar(ctx, txt, max) {
+    if (ctx.measureText(txt).width <= max) return txt;
+    let t = txt; while (t.length > 1 && ctx.measureText(t + '…').width > max) t = t.slice(0, -1);
+    return t + '…';
+  }
+
+  // Dibuja la tarjeta en un canvas y la ofrece para guardar (Fotos) o descargar.
+  async function descargarTarjeta() {
+    toast('Generando tu tarjeta…');
+    const rango = Estado.rango(P), nombre = P.apodo || 'Explorador';
+    const W = 1040, H = 660, r = 40;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const grad = g.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#4c2d80'); grad.addColorStop(0.55, '#2b1a46'); grad.addColorStop(1, '#150e24');
+    rr(g, 0, 0, W, H, r); g.fillStyle = grad; g.fill();
+    g.save(); rr(g, 0, 0, W, H, r); g.clip();
+    const sh = g.createLinearGradient(W * 0.5, -50, W * 1.05, H);
+    sh.addColorStop(0, 'rgba(255,214,0,0)'); sh.addColorStop(0.5, 'rgba(255,214,0,0.10)'); sh.addColorStop(1, 'rgba(255,214,0,0)');
+    g.fillStyle = sh; g.fillRect(W * 0.45, -50, W, H + 100); g.restore();
+    try { await document.fonts.ready; } catch (_) {}
+    const logo = await cargarImg('assets/img/isotipo.png');
+    g.textBaseline = 'middle';
+    if (logo) g.drawImage(logo, 54, 52, 60, 60);
+    g.fillStyle = 'rgba(255,255,255,.95)'; g.font = '800 30px "Serif Gothic", serif';
+    g.fillText('UNIVERSO CÍCLOPE', 128, 84);
+    g.font = '700 24px "Poppins", sans-serif';
+    const lvl = 'NIVEL ' + rango.nivel, lw = g.measureText(lvl).width + 44;
+    g.strokeStyle = 'rgba(255,214,0,.5)'; g.lineWidth = 2; rr(g, W - lw - 54, 60, lw, 46, 23); g.stroke();
+    g.fillStyle = '#FFD600'; g.textAlign = 'center'; g.fillText(lvl, W - lw / 2 - 54, 84); g.textAlign = 'left';
+    g.fillStyle = 'rgba(255,255,255,.7)'; g.font = '600 22px "Poppins", sans-serif'; g.fillText('EXPLORADOR', 56, 212);
+    g.fillStyle = '#fff'; g.font = '900 62px "Serif Gothic", serif'; g.fillText(recortar(g, nombre, 560), 54, 270);
+    g.fillStyle = '#FFD600'; g.font = '600 30px "Poppins", sans-serif'; g.fillText(rango.ico + ' ' + rango.nombre, 56, 332);
+    const stats = [['Sellos', P.sellos], ['Gemas', P.gemas], ['Visitas', P.visitas.length]]; let sx = 56;
+    stats.forEach(pair => {
+      g.fillStyle = '#fff'; g.font = '800 52px "Poppins", sans-serif'; g.fillText(String(pair[1]), sx, 432);
+      const vw = g.measureText(String(pair[1])).width;
+      g.fillStyle = 'rgba(255,255,255,.75)'; g.font = '500 22px "Poppins", sans-serif'; g.fillText(pair[0].toUpperCase(), sx, 482);
+      sx += Math.max(170, vw + 100);
+    });
+    g.fillStyle = 'rgba(255,255,255,.7)'; g.font = '400 30px "VT323", monospace'; g.fillText(P.codigoRef, 56, 562);
+    const qrImg = await cargarImg(qrData(checkinURL(P.id), 6, 2));
+    const qs = 190, qx = W - qs - 54, qy = H - qs - 54;
+    g.fillStyle = '#fff'; rr(g, qx - 14, qy - 14, qs + 28, qs + 28, 18); g.fill();
+    if (qrImg) g.drawImage(qrImg, qx, qy, qs, qs);
+    cv.toBlob(blob => {
+      if (!blob) { toast('No se pudo generar la imagen'); return; }
+      modalTarjetaImagen(URL.createObjectURL(blob));
+    }, 'image/png');
+  }
+
+  function modalTarjetaImagen(url) {
+    abrirModal(`
+      <div class="modal__title">Tu tarjeta de lealtad</div>
+      <p class="modal__text">En el teléfono: <b>mantén presionada</b> la imagen y elige “Guardar en Fotos”. En computadora, usa Descargar.</p>
+      <img src="${url}" alt="Tarjeta de lealtad" style="width:100%;border-radius:14px;margin-bottom:14px">
+      <a class="btn btn--solid btn--full" href="${url}" download="tarjeta-universo-ciclope.png">📥 Descargar imagen</a>
+      <button class="btn btn--ghost btn--full" id="btn-ok" style="margin-top:10px">Cerrar</button>`);
+    $('#btn-ok').addEventListener('click', cerrarModal);
+  }
+
+  // Modal "mostrar en caja" (QR grande para que el equipo lo escanee).
+  function modalTarjeta() {
+    const rango = Estado.rango(P);
+    abrirModal(`
+      <div class="modal__ico">🎫</div>
+      <div class="modal__title">Muestra esto en caja</div>
+      <p class="modal__text">El equipo escanea tu código y registra tu visita al instante.</p>
+      <div style="text-align:center;margin-bottom:14px"><img src="${qrData(checkinURL(P.id), 8, 2)}" alt="Tu código" style="width:224px;height:224px;background:#fff;padding:10px;border-radius:16px;display:inline-block;image-rendering:pixelated"></div>
+      <div class="modal__code">${esc(P.codigoRef)}</div>
+      <p class="modal__text"><b>${esc(P.apodo || 'Explorador')}</b> · ${esc(rango.nombre)}</p>
+      <button class="btn btn--solid btn--full" data-descargar>📥 Descargar mi tarjeta</button>
+      <button class="btn btn--ghost btn--full" id="btn-ok" style="margin-top:10px">Cerrar</button>`);
+    $('#btn-ok').addEventListener('click', cerrarModal);
+  }
+
+  // Modal "Agregar a Wallet" (versión que funciona hoy: guardar imagen + instalar app).
+  function modalWallet() {
+    abrirModal(`
+      <div class="modal__ico">🎫</div>
+      <div class="modal__title">Lleva tu tarjeta contigo</div>
+      <p class="modal__text">Tenla siempre a la mano, como una tarjeta de lealtad.</p>
+      <button class="btn btn--solid btn--full" data-descargar>📥 Guardar tarjeta en Fotos</button>
+      ${enStandalone ? '' : `<button class="btn btn--ghost btn--full" id="btn-wallet-install" style="margin-top:10px">📲 Agregar a la pantalla de inicio</button>`}
+      <p class="field__hint" style="margin-top:12px;text-align:center">La tarjeta nativa de Apple Wallet / Google Wallet llega en una próxima fase.</p>`);
+    const bi = $('#btn-wallet-install');
+    if (bi) bi.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {}
+        deferredPrompt = null; cerrarModal();
+      } else if (esIOS) {
+        abrirModal(`<div class="modal__ico">📲</div><div class="modal__title">Agregar en iPhone</div>
+          <div class="onboard__ios" style="text-align:left">Para tenerla siempre a la mano:<br><br>
+          1. Toca <b>Compartir</b> ⬆️ (abajo en Safari).<br>
+          2. Elige <b>“Agregar a inicio”</b>.<br>
+          3. Toca <b>Agregar</b>. ¡Listo!</div>
+          <button class="btn btn--solid btn--full" id="btn-ok">Entendido</button>`);
+        $('#btn-ok').addEventListener('click', cerrarModal);
+      } else { toast('Usa el menú de tu navegador → “Instalar app”.'); cerrarModal(); }
+    });
+  }
+
+  /* ---------------- AVISOS POR ZONA (geolocalización) ----------------
+     En web NO hay geofence en segundo plano (sobre todo en iPhone).
+     Esto saluda al Explorador cuando ABRE la app cerca de una base,
+     con el permiso de ubicación concedido. */
+  const Zonas = {
+    cfg() { return (CONTENIDO && CONTENIDO.geoZonas) || {}; },
+    activo() { const c = this.cfg(); return !!(c.activo && (c.zonas || []).length && navigator.geolocation); },
+    dist(a, b, c, d) {
+      const R = 6371000, rad = x => x * Math.PI / 180;
+      const dLat = rad(c - a), dLng = rad(d - b);
+      const s = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a)) * Math.cos(rad(c)) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+    },
+    cercana(lat, lng) {
+      const c = this.cfg(); let mejor = null;
+      (c.zonas || []).forEach(z => {
+        if (z.lat == null || z.lng == null) return;
+        const d = this.dist(lat, lng, z.lat, z.lng);
+        if (d <= (z.radio || c.radioDefault || 800) && (!mejor || d < mejor.d)) mejor = { z, d };
+      });
+      return mejor ? mejor.z : null;
+    },
+    saludar(z) {
+      if (sessionStorage.getItem('uc_zona') === z.base) return;
+      sessionStorage.setItem('uc_zona', z.base);
+      abrirModal(`
+        <div class="modal__ico">📍</div>
+        <div class="modal__title">Estás cerca de una base</div>
+        <p class="modal__mirano">“${esc(z.saludo || '¡Te esperamos, Explorador!')}”</p>
+        <p class="modal__text"><b>Base ${esc(z.base)}</b> · ${esc(z.zona || '')}</p>
+        <button class="btn btn--solid btn--full" id="z-reg">📸 Registrar mi visita</button>
+        <button class="btn btn--ghost btn--full" id="z-ok" style="margin-top:10px">Ahora no</button>`);
+      $('#z-reg') && $('#z-reg').addEventListener('click', () => { cerrarModal(); modalSellar(); });
+      $('#z-ok') && $('#z-ok').addEventListener('click', cerrarModal);
+      try {
+        if ('Notification' in window && Notification.permission === 'granted')
+          new Notification('Universo Cíclope', { body: z.saludo || ('Estás cerca de la Base ' + z.base), icon: 'assets/img/app-icon-192.png' });
+      } catch (_) {}
+    },
+    chequear() {
+      if (!this.activo()) return;
+      navigator.geolocation.getCurrentPosition(pos => {
+        const z = this.cercana(pos.coords.latitude, pos.coords.longitude);
+        if (z) this.saludar(z);
+      }, () => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 });
+    },
+    autoArranque() {
+      if (!this.activo() || !navigator.permissions || !navigator.permissions.query) return;
+      navigator.permissions.query({ name: 'geolocation' })
+        .then(st => { if (st.state === 'granted') this.chequear(); }).catch(() => {});
+    },
+    activar() {
+      if (!navigator.geolocation) { toast('Tu navegador no permite ubicación.'); return; }
+      sessionStorage.removeItem('uc_zona');
+      toast('Buscando tu ubicación…');
+      navigator.geolocation.getCurrentPosition(pos => {
+        const z = this.cercana(pos.coords.latitude, pos.coords.longitude);
+        if (z) this.saludar(z);
+        else toast('Avisos por zona activados. Te saludaremos cuando estés cerca.');
+      }, () => toast('No se pudo obtener tu ubicación. Revisa el permiso.'),
+         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    },
+  };
+
   /* ---------------- ONESIGNAL (push) ---------------- */
   function initOneSignal() {
     const appId = (CONTENIDO.notificaciones||{}).onesignalAppId;
@@ -863,8 +1069,10 @@
 
   /* ---------------- DELEGACIÓN GLOBAL DE CLICKS ---------------- */
   app.addEventListener('click', e => {
-    const el = e.target.closest('[data-ir],[data-juego],[data-modal],[data-cobrar],[data-arch],[data-accion],[data-promo],[data-copiar],[data-reset]');
+    const el = e.target.closest('[data-ir],[data-juego],[data-modal],[data-cobrar],[data-arch],[data-accion],[data-promo],[data-copiar],[data-reset],[data-descargar],[data-zona]');
     if (!el) return;
+    if (el.dataset.descargar !== undefined) return descargarTarjeta();
+    if (el.dataset.zona !== undefined)      return Zonas.activar();
     if (el.dataset.promo !== undefined) {
       const a = el.dataset.promo;
       if (a === 'registrar') return modalSellar();
@@ -889,6 +1097,8 @@
       if (el.dataset.modal==='notis')  return modalNotis();
       if (el.dataset.modal==='ayuda')  return modalAyuda();
       if (el.dataset.modal==='invitar') return modalInvitar();
+      if (el.dataset.modal==='tarjeta') return modalTarjeta();
+      if (el.dataset.modal==='wallet')  return modalWallet();
     }
     if (el.dataset.accion) {
       let a; try { a = JSON.parse(el.dataset.accion); } catch(_) { a = el.dataset.accion; }
@@ -934,6 +1144,7 @@
   const inicial = (location.hash || '#inicio').replace('#','');
   ir(rutas.includes(inicial) ? inicial : 'inicio');
   initOneSignal();
+  Zonas.autoArranque();
   // online: trae contenido editado (panel) y el progreso más reciente
   if (window.Sync && Sync.activo()) {
     Sync.config().then(cfg => {

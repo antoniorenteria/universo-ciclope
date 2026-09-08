@@ -7,12 +7,13 @@
      al instante y se guardan la primera vez.
    Sube VERSION al publicar para limpiar cachés viejos.
    ============================================================ */
-const VERSION = 'uc-v13';
+const VERSION = 'uc-v14';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './assets/css/universo.css',
+  './assets/js/qr.min.js',
   './assets/js/reglas.js',
   './assets/js/contenido.js',
   './assets/js/estado.js',

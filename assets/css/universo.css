@@ -288,6 +288,9 @@ body[data-sec="perfil"]     .aura { background:radial-gradient(ellipse 110% 50% 
 .pass__qr { position:absolute; right:16px; bottom:14px; width:70px; height:70px; background:#fff; padding:5px; border-radius:9px; box-shadow:0 4px 14px rgba(0,0,0,.4); }
 .pass__qr img { width:100%; height:100%; display:block; }
 .pass__code { position:absolute; right:16px; bottom:90px; font-family:var(--panelfont); font-size:14px; letter-spacing:.12em; color:#fff; opacity:.7; }
+.pass-actions { display:flex; gap:10px; margin-bottom:8px; }
+.pass-actions .btn { flex:1; }
+.pass-hint { font-size:12px; text-align:center; color:var(--texto); opacity:.8; margin-bottom:12px; }
 
 /* ============ ESCALERA DE RANGOS ============ */
 .ladder { display:flex; flex-direction:column; gap:2px; padding:14px 12px; margin-bottom:16px; }

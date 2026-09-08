@@ -221,6 +221,52 @@ el guardado no llegó). Para que sea a prueba de fallos se dejó el contenido **
   ser inestables para hotlink); por eso conviene el contenido crítico fijo en código.
 - **SW** `uc-v13`. Fuentes originales en `1.Redes Sociales/1. 2026/Promos/`.
 
+---
+
+## 🎫 TARJETA DE LEALTAD + CAJA + ZONAS (2026-09-07) — IMPLEMENTADO en local, FALTA publicar
+
+Brief de Toño: tarjeta de lealtad que se agrega a Wallet, QR que registra la visita al
+escanear, notificaciones por zona (Pachuca / Mineral), botón "Descargar"/"Agregar a Wallet"
+en Mi perfil, estilo degradado con logo, y el sitio web en el perfil.
+
+**Decisiones de Toño (esta sesión):**
+- Wallet → **versión gratis que funciona hoy** (descargar tarjeta como imagen + agregar a inicio).
+  El Wallet NATIVO (Apple/Google) queda para fase 3 (necesita cuenta Apple Developer $99/año
+  y/o emisor de Google Wallet + servicio que firme el pase).
+- QR de visita → **el cajero escanea al cliente** (página de caja protegida con clave).
+- Zonas → **detección al abrir la app** (en web NO hay geofence en segundo plano, sobre todo iPhone).
+
+**Qué se construyó (todo verificado en navegador, fresco y con datos legacy):**
+- **Librería QR local** `assets/js/qr.min.js` (qrcode-generator) → el QR de la tarjeta ahora
+  se genera OFFLINE y se puede exportar a imagen sin problemas de origen. Cargada en index.html.
+- **Perfil (`app.js` renderPerfil):** la Card ahora es la **Tarjeta de lealtad**; su QR lleva a
+  `/checkin/?e=<id>` (para caja). Debajo, botones **📥 Descargar** y **🎫 Agregar a Wallet**, y
+  el texto de ayuda. Nueva fila **📍 Avisos por zona**. Nueva fila **🌐 Sitio web oficial**
+  (de `CONTENIDO.sitio`).
+- **Descargar tarjeta:** `descargarTarjeta()` dibuja la card en canvas (degradado morado + logo +
+  datos + QR) y la ofrece para guardar en Fotos / descargar PNG. `modalTarjeta()` = QR grande
+  "muestra esto en caja". `modalWallet()` = guardar imagen + agregar a inicio (iOS/Android).
+- **Zonas:** módulo `Zonas` en app.js (haversine). Al abrir la app, si el permiso de ubicación
+  YA está concedido, saluda si estás cerca de una base; el botón del perfil pide permiso.
+  Config en `contenido.js → geoZonas` (activo, zonas con lat/lng/radio/saludo).
+  ⚠️ **Coordenadas son APROXIMADAS** — Toño debe poner las exactas (Google Maps → clic derecho
+  → copiar lat,lng) en `contenido.js`.
+- **Página de caja** `checkin/index.html` (nueva): pide la **clave del personal** (la de admin),
+  la guarda en ese dispositivo, muestra al explorador (lo lee por id) y registra la visita.
+  El cajero escanea el QR de la tarjeta del cliente con la cámara → abre esta página con el id.
+- **Backend `Code.gs`:** nueva acción **`checkin`** (protegida con la clave) que suma 1 sello +
+  10 gemas, guarda la visita, sube el `sync` (el teléfono del cliente lo adopta al reabrir) y
+  evita duplicados en 90 s. ⚠️ **Toño debe RE-DESPLEGAR Code.gs** (nueva versión) para que la
+  caja funcione; sin eso, todo lo demás (tarjeta, descarga, sitio, zonas) igual sirve.
+- **SW** subido a `uc-v14` (+ qr.min.js en el caché).
+- `sitio: 'https://elanillodelciclope.com'` agregado en contenido.js.
+
+> **PRÓXIMO PASO:** (1) Publicar = `git add -A && git commit && git push` desde `universo-ciclope/`
+> (Pages/Vercel redespliega). (2) Toño re-despliega `Code.gs` (para la caja). (3) Toño pone las
+> **coordenadas exactas** de las 2 sucursales en `contenido.js → geoZonas`. NO se ha publicado aún.
+
+---
+
 ### 📌 Historial de cierres
 - **2026-07-30 — Cierre #1:** app completa en vivo con dominio propio, backend online,
   panel admin (métricas + editor + subir fotos), notificaciones, onboarding, referidos,

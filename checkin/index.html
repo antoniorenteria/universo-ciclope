@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Caja · Universo Cíclope</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#151019">
+<link rel="icon" type="image/png" href="../assets/img/app-icon.png">
+<style>
+  :root{ --amarillo:#FFD600; --marfil:#f6f3ee; --texto:#cfc6dd; --linea:rgba(255,255,255,.14); }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; min-height:100dvh; font-family:'Poppins',system-ui,sans-serif; color:var(--marfil);
+    background:radial-gradient(ellipse 120% 60% at 50% -6%, #3a2160, #150e24 62%), #120a1e;
+    display:flex; flex-direction:column; align-items:center; padding:24px 18px calc(env(safe-area-inset-bottom) + 24px); }
+  .wrap{ width:100%; max-width:440px; }
+  .brand{ display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:6px; }
+  .brand img{ width:38px; height:38px; }
+  .brand b{ font-size:15px; letter-spacing:.02em; }
+  h1{ text-align:center; font-size:20px; margin:6px 0 4px; }
+  .sub{ text-align:center; color:var(--texto); font-size:13px; margin:0 0 20px; }
+  .card{ background:rgba(255,255,255,.05); border:1px solid var(--linea); border-radius:16px; padding:18px; margin-bottom:14px; }
+  label{ display:block; font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:var(--amarillo); margin-bottom:6px; }
+  input,select{ width:100%; padding:14px; border-radius:12px; border:1px solid var(--linea); background:rgba(0,0,0,.25); color:var(--marfil); font-size:16px; }
+  .btn{ width:100%; padding:15px; border:0; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; margin-top:12px; }
+  .btn--go{ background:var(--amarillo); color:#1a1408; }
+  .btn--ghost{ background:transparent; border:1px solid var(--linea); color:var(--marfil); }
+  .hi{ text-align:center; padding:8px 0; }
+  .hi .nom{ font-size:26px; font-weight:800; }
+  .hi .rk{ color:var(--amarillo); font-size:14px; margin-top:2px; }
+  .stats{ display:flex; justify-content:center; gap:26px; margin-top:14px; }
+  .stats b{ display:block; font-size:26px; }
+  .stats span{ font-size:11px; color:var(--texto); text-transform:uppercase; letter-spacing:.05em; }
+  .ok{ text-align:center; padding:14px; }
+  .ok .big{ font-size:52px; }
+  .msg{ text-align:center; font-size:14px; color:var(--texto); margin-top:8px; min-height:20px; }
+  .err{ color:#ff9a9a; }
+  .hidden{ display:none; }
+  .foot{ text-align:center; font-size:11px; color:var(--texto); opacity:.6; margin-top:16px; }
+  .link{ color:var(--amarillo); text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><img src="../assets/img/isotipo.png" alt=""><b>Universo Cíclope · Caja</b></div>
+  <h1>Registrar visita</h1>
+  <p class="sub">Escanea el código de la tarjeta del cliente y confirma su visita.</p>
+
+  <!-- PASO 1: clave del personal -->
+  <div class="card" id="paso-key">
+    <label>Clave del personal</label>
+    <input id="in-key" type="password" inputmode="numeric" placeholder="••••••" autocomplete="off">
+    <button class="btn btn--go" id="btn-key">Entrar</button>
+    <div class="msg" id="key-msg"></div>
+  </div>
+
+  <!-- PASO 2: registrar -->
+  <div class="card hidden" id="paso-reg">
+    <div id="explorador" class="hi"></div>
+    <div style="margin-top:14px">
+      <label>Sucursal</label>
+      <select id="in-base"></select>
+    </div>
+    <button class="btn btn--go" id="btn-reg">✅ Registrar visita</button>
+    <div class="msg" id="reg-msg"></div>
+  </div>
+
+  <!-- PASO 3: escanear otro / manual -->
+  <div class="card hidden" id="paso-otro">
+    <label>Registrar a otro explorador</label>
+    <input id="in-id" placeholder="Escanea su QR o pega su código (UC-...)" autocomplete="off">
+    <button class="btn btn--go" id="btn-buscar">Buscar y registrar</button>
+    <button class="btn btn--ghost" id="btn-salir">Cerrar sesión de caja</button>
+  </div>
+
+  <p class="foot">El Anillo del Cíclope® · uso interno</p>
+</div>
+
+<script>
+(function(){
+  var ENDPOINT = 'https://script.google.com/macros/s/AKfycbwK_fBVUVF-PpQTblUGQciOdCOFk1d0Cuc4YUo4UEtJZL16wAYdlnrj8DMWpI3JDYGv/exec';
+  var BASES = ['Revolución','Tulipanes'];
+  var $ = function(s){ return document.querySelector(s); };
+  var params = new URLSearchParams(location.search);
+  var idActual = (params.get('e')||'').trim();
+  var key = '';
+
+  // pinta el selector de sucursal (recuerda la última)
+  var sel = $('#in-base');
+  BASES.forEach(function(b){ var o=document.createElement('option'); o.value=b; o.textContent=b; sel.appendChild(o); });
+  var ultBase = localStorage.getItem('uc_caja_base'); if (ultBase) sel.value = ultBase;
+  sel.addEventListener('change', function(){ localStorage.setItem('uc_caja_base', sel.value); });
+
+  function get(url){ return fetch(url).then(function(r){ return r.json(); }); }
+  function post(body){
+    return fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) })
+      .then(function(r){ return r.json(); });
+  }
+
+  // ---- PASO 1: validar clave ----
+  var guardada = localStorage.getItem('uc_caja_key');
+  if (guardada) { key = guardada; entrar(); }
+
+  $('#btn-key').addEventListener('click', function(){
+    var k = $('#in-key').value.trim();
+    if (!k) return;
+    $('#key-msg').textContent = 'Verificando…';
+    get(ENDPOINT + '?accion=login&key=' + encodeURIComponent(k)).then(function(j){
+      if (j && j.ok){ key = k; localStorage.setItem('uc_caja_key', k); $('#key-msg').textContent=''; entrar(); }
+      else { $('#key-msg').innerHTML = '<span class="err">Clave incorrecta.</span>'; }
+    }).catch(function(){ $('#key-msg').innerHTML = '<span class="err">Sin conexión. Intenta de nuevo.</span>'; });
+  });
+  $('#in-key').addEventListener('keydown', function(e){ if (e.key==='Enter') $('#btn-key').click(); });
+
+  function entrar(){
+    $('#paso-key').classList.add('hidden');
+    $('#paso-otro').classList.remove('hidden');
+    if (idActual) cargarExplorador(idActual);
+  }
+
+  // ---- PASO 2: mostrar explorador y registrar ----
+  function cargarExplorador(id){
+    idActual = id;
+    $('#paso-reg').classList.remove('hidden');
+    $('#explorador').innerHTML = 'Cargando…';
+    $('#reg-msg').textContent = '';
+    get(ENDPOINT + '?accion=cargar&id=' + encodeURIComponent(id)).then(function(j){
+      if (j && j.ok && j.perfil){
+        var p = j.perfil;
+        $('#explorador').innerHTML =
+          '<div class="nom">'+ (p.apodo || 'Explorador') +'</div>'+
+          '<div class="rk">Código '+ (p.codigoRef||'') +'</div>'+
+          '<div class="stats"><div><b>'+(p.sellos||0)+'</b><span>Sellos</span></div>'+
+          '<div><b>'+(p.gemas||0)+'</b><span>Gemas</span></div>'+
+          '<div><b>'+((p.visitas||[]).length)+'</b><span>Visitas</span></div></div>';
+      } else {
+        $('#explorador').innerHTML = '<div class="msg err">No se encontró. Pídele que abra su app una vez.</div>';
+      }
+    }).catch(function(){ $('#explorador').innerHTML = '<div class="msg err">Sin conexión.</div>'; });
+  }
+
+  $('#btn-reg').addEventListener('click', function(){
+    if (!idActual) return;
+    var btn = $('#btn-reg'); btn.disabled = true;
+    $('#reg-msg').textContent = 'Registrando…';
+    post({ accion:'checkin', key:key, id:idActual, base: sel.value }).then(function(j){
+      btn.disabled = false;
+      if (j && j.ok){
+        if (j.dup){ $('#reg-msg').innerHTML = '<span class="err">'+ (j.msg||'Ya se registró hace un momento.') +'</span>'; return; }
+        $('#paso-reg').innerHTML = '<div class="ok"><div class="big">✅</div>'+
+          '<div class="hi"><div class="nom">¡Visita registrada!</div>'+
+          '<div class="rk">'+ (j.apodo||'Explorador') +'</div></div>'+
+          '<div class="stats"><div><b>'+j.sellos+'</b><span>Sellos</span></div>'+
+          '<div><b>'+j.gemas+'</b><span>Gemas</span></div></div>'+
+          '<button class="btn btn--go" onclick="location.href=location.pathname">Registrar otra</button></div>';
+      } else {
+        $('#reg-msg').innerHTML = '<span class="err">'+ ((j&&j.msg)||'No se pudo registrar.') +'</span>';
+      }
+    }).catch(function(){ btn.disabled=false; $('#reg-msg').innerHTML = '<span class="err">Sin conexión.</span>'; });
+  });
+
+  // ---- PASO 3: otro / manual ----
+  $('#btn-buscar').addEventListener('click', function(){
+    var v = $('#in-id').value.trim();
+    if (!v) return;
+    // acepta pegar la URL completa del QR o solo el id
+    var m = v.match(/[?&]e=([^&\s]+)/); if (m) v = decodeURIComponent(m[1]);
+    cargarExplorador(v);
+    window.scrollTo({ top: 0, behavior:'smooth' });
+  });
+  $('#btn-salir').addEventListener('click', function(){
+    localStorage.removeItem('uc_caja_key');
+    location.href = location.pathname;
+  });
+})();
+</script>
+</body>
+</html>
